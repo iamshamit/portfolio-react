@@ -68,36 +68,35 @@
     transition: 0.4s;
 }
 @media(max-width:768px){
-    .services{
-        align-items: start;
-        gap: 70px;
-        margin: 20px 70px;
+    .services {
+        gap: 40px;
+        margin: 20px;
     }
-    .services-title h1{
+    .services-title h1 {
         padding: 0;
         font-size: 50px
     }
-    .services-title img{
+    .services-title img {
         width: 130px;
         margin-right: -20px;
     }
-    .services-format{
+    .services-format {
         gap: 20px;
         padding: 32px;
     }
-    .services-format h2{
+    .services-format h2 {
         font-size: 28px;
     }
-    .services-format p{
+    .services-format p {
         font-size: 18px;
         line-height: 32px;
         max-width: 300px;
     }
-    .services-readmore img{
+    .services-readmore img {
         width: 20px;
     }
-    .services-container{
-        grid-template-columns: 1fr 1fr;
-        gap:30px;
+    .services-container {
+        grid-template-columns: 1fr;
+        gap: 30px;
     }
 }
