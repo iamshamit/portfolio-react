@@ -4,6 +4,14 @@
     justify-content: space-between;
     margin: 20px 170px;
 }
+.navbar-logo{
+    width: 200px;
+    height: 80px;
+}
+.navbar a{
+    text-decoration: none;
+    color: white;
+}
 .nav-menu{
     display: flex;
     align-items: center;

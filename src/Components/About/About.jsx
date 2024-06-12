@@ -1,7 +1,7 @@
 import React from 'react'
 import './About.css'
 import theme_pattern from '../../assets/theme_pattern.svg'
-import profile_image from '../../assets/about_profile.svg'
+import profile_image from '../../assets/about.JPG'
 
 const About = () => {
   return (
@@ -16,18 +16,19 @@ const About = () => {
             </div>
             <div className="about-right">
                 <div className="about-para">
-                    <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Quidem provident, rem quam ducimus illum error suscipit? Aliquam sequi tenetur</p>
-                    <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. In velit alias dolores excepturi ipsa tempore soluta officiis voluptas?</p>
+                    <p>I am a dedicated and enthusiastic computer science student with a passion for technology and a drive to innovate. Through hands-on experience and rigorous coursework, I have honed my skills in coding, web development, and problem-solving.</p>
+                    <p>I thrive in collaborative environments, leveraging my communication skills to work effectively in teams and deliver high-quality results. Always eager to learn and adapt to new challenges, I am committed to pushing the boundaries of what is possible in the world of technology.</p>
                 </div>
                 <div className="about-skills">
                     <div className="about-skill"><p>HTML & CSS</p><hr style={{width:"50%"}}/></div>
                     <div className="about-skill"><p>React JS</p><hr style={{width:"70%"}}/></div>
                     <div className="about-skill"><p>Java Script</p><hr style={{width:"60%"}}/></div>
-                    <div className="about-skill"><p>Next JS</p><hr style={{width:"50%"}}/></div>
+                    <div className="about-skill"><p>Flask</p><hr style={{width:"30%"}}/></div>
                 </div>
             </div>
         </div>
         <div className="about-achievements">
+            {/* 
                 <div className="about-achievement">
                     <h1>10+</h1>
                     <p>YEARS OF EXPERIENCE</p>
@@ -40,7 +41,8 @@ const About = () => {
                     <h1>15+</h1>
                     <p>HAPPY CLIENTS</p>
                 </div>
-            </div>
+                */} 
+        </div>
     </div>
   )
 }

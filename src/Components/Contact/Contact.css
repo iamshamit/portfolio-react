@@ -43,12 +43,19 @@
     font-size: 20px;
     line-height: 35px;
 }
+.contact-left img{
+    max-width: 38px;
+    max-height: 38px;
+}
 .contact-details{
     display: flex;
     flex-direction: column;
     gap:30px;
     color: #d8d8d8;
     font-size: 22px;
+}
+.contact-details a{
+    text-decoration: none;
 }
 .contact-detail{
     display: flex;
