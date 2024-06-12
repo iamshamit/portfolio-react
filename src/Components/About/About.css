@@ -36,6 +36,12 @@
     font-size: 24px;
     font-weight: 500;
 }
+.about-left img {
+    width: 400px;
+    height: 550px;
+    object-fit:cover;
+    zoom: 120%;
+}
 .about-skills{
     display: flex;
     flex-direction: column;

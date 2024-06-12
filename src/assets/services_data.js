@@ -1,34 +1,20 @@
 const Services_Data = [
     {
         s_no:"01",
-        s_name:"Web design",
-        s_desc:"Web development is the process of building, programming..."
+        s_name:"Website Development",
+        s_desc:"I design and develop custom websites that are responsive, interactive, and scalable."
     },
     {
+        s_name:"App Development",
         s_no:"02",
-        s_name:"Graphics design",
-        s_desc:"Web development is the process of building, programming..."
+        s_desc:"I build mobile apps for iOS and Android devices, using cutting-edge technologies."
     },
     {
+        s_name:"Software Development",
         s_no:"03",
-        s_name:"Social media",
-        s_desc:"Web development is the process of building, programming..."
+        s_desc:"I develop custom software solutions that cater to your business needs, improving efficiency and productivity."
     },
-    {
-        s_no:"04",
-        s_name:"App design",
-        s_desc:"Web development is the process of building, programming..."
-    },
-    {
-        s_no:"05",
-        s_name:"Digital marketing",
-        s_desc:"Web development is the process of building, programming..."
-    },
-    {
-        s_no:"06",
-        s_name:"Content writing",
-        s_desc:"Web development is the process of building, programming..."
-    },
+    
 ]
- 
+
 export default Services_Data;

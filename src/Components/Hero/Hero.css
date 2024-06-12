@@ -6,6 +6,10 @@
 }
 .hero img{
     margin-top: 100px;
+    width: 350px;
+    height: 350px;
+    object-fit:cover;
+    border-radius: 50%;
 }
 .hero h1{
     text-align: center;
@@ -19,11 +23,16 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
+.hero-action a{
+    text-decoration: none;
+    color: white;
+}
 .hero p{
     width: 50%;
     text-align: center;
     font-size: 24px;
-    line-height: 40px;
+    line-height: 32px;
+    margin-top:-10p ;
 }
 .hero-action{
     display: flex;

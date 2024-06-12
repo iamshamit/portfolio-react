@@ -4,6 +4,8 @@ import theme_pattern from '../../assets/theme_pattern.svg'
 import mail_icon from '../../assets/mail_icon.svg'
 import location_icon from '../../assets/location_icon.svg'
 import call_icon from '../../assets/call_icon.svg'
+import instagram_icon from '../../assets/instagram.svg'
+import twitter_icon from '../../assets/twitter.svg'
 
 const Contact = () => {
   const onSubmit = async (event) => {
@@ -37,16 +39,31 @@ const Contact = () => {
       <div className="contact-section">
         <div className="contact-left">
           <h1>Let's talk</h1>
-          <p>Distinctio tempora maxime similique eum nobis cumque commodi placeat recusandae temporibus adipisci ipsa pariatur voluptas laboriosam, corrupti dolor in excepturi beatae quia!</p>
+          <p>I’m always excited to connect with fellow tech enthusiasts, collaborators, and potential employers. Whether you have a project in mind, need some coding assistance, or just want to discuss the latest trends in computer science, I’m here to chat. Feel free to reach out—let’s create something amazing together!</p>
           <div className="contact-details">
             <div className="contact-detail">
-              <img src={mail_icon} alt="" /><p>shamitmishra22@gmail.com</p>
+              <a href="mailto:shamitmishra22@gmail.com" style={{ display: 'flex', alignItems: 'center' }}>
+                <img src={mail_icon} alt="" style={{ marginRight: 20 }} /><br/>
+                <p>shamitmishra22@gmail.com</p>
+              </a>
             </div>
             <div className="contact-detail">
-              <img src={call_icon} alt="" /><p>+91 8328991928</p>
+              <a href="https://www.google.com/maps/place/Odisha,+India" style={{ display: 'flex', alignItems: 'center' }}>
+                <img src={location_icon} alt="" style={{ marginRight: 30 }} />
+                <p>Odisha, India</p>
+              </a>
             </div>
             <div className="contact-detail">
-              <img src={location_icon} alt="" /><p>Odisha, India</p>
+              <a href="https://www.instagram.com/itzshamit21" style={{ display: 'flex', alignItems: 'center' }}>
+                <img src={instagram_icon} alt="" style={{ marginRight: 20 }} />
+                <p>@itzshamit21</p>
+              </a>
+            </div>
+            <div className="contact-detail">
+              <a href="https://www.twitter.com/SimplyShamit" style={{ display: 'flex', alignItems: 'center' }}>
+                <img src={twitter_icon} alt="" style={{ marginRight: 20 }} />
+                <p>@SimplyShamit</p>
+              </a>
             </div>
           </div>
         </div>

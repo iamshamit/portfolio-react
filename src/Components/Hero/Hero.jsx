@@ -1,18 +1,19 @@
 import React from 'react'
 import './Hero.css'
-import profile_img from '../../assets/profile_img.svg'
+import profile_img from '../../assets/profile.jpg'
 
 const Hero = () => {
   return (
     <div className='hero' id='hero'>
         <img src={profile_img} alt="" />
-        <h1><span>I'm Shamit Mishra,</span> frontend developer based in India.</h1>
-        <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Ex quisquam temporibus officia, consectetur quidem commodi accusamus, harum modi deserunt mollitia odit magni nesciunt nulla! Ipsam, ipsa autem. Repellendus, fugit dignissimos?</p>
+        <h1><span>I'm Shamit Mishra,</span> Full Stack developer based in India.</h1>
+        <p>Welcome to my portfolio! I'm passionate about coding and web development, experienced in various languages.</p>
+        <p>I enjoy solving complex problems with innovative solutions and constantly seek opportunities to learn and contribute.</p>
         <div className="hero-action">
-            <div className="hero-connect">Connect With me</div>
+            <a target="_blank" href='https://www.linkedin.com/in/shamitmishra/'><div className="hero-connect">Connect With me</div></a>
             <div className="hero-resume">My Resume</div>
         </div>
-    </div>
+    </div>  
   )
 }
 
