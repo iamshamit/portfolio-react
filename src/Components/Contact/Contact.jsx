@@ -48,19 +48,19 @@ const Contact = () => {
               </a>
             </div>
             <div className="contact-detail">
-              <a href="https://www.google.com/maps/place/Odisha,+India" style={{ display: 'flex', alignItems: 'center' }}>
+              <a target="_blank" href="https://www.google.com/maps/place/Odisha,+India" style={{ display: 'flex', alignItems: 'center' }}>
                 <img src={location_icon} alt="" style={{ marginRight: 30 }} />
                 <p>Odisha, India</p>
               </a>
             </div>
             <div className="contact-detail">
-              <a href="https://www.instagram.com/itzshamit21" style={{ display: 'flex', alignItems: 'center' }}>
+              <a target="_blank" href="https://www.instagram.com/itzshamit21" style={{ display: 'flex', alignItems: 'center' }}>
                 <img src={instagram_icon} alt="" style={{ marginRight: 20 }} />
                 <p>@itzshamit21</p>
               </a>
             </div>
             <div className="contact-detail">
-              <a href="https://www.twitter.com/SimplyShamit" style={{ display: 'flex', alignItems: 'center' }}>
+              <a target="_blank" href="https://www.twitter.com/SimplyShamit" style={{ display: 'flex', alignItems: 'center' }}>
                 <img src={twitter_icon} alt="" style={{ marginRight: 20 }} />
                 <p>@SimplyShamit</p>
               </a>
