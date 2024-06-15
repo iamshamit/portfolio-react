@@ -69,7 +69,6 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 Feel free to get in touch with me via the contact form on the website or through the following channels:
 
 - **Email:** shamitmishra22@gmail.com
-- **Phone:** +91 8328991928
 - **Location:** Odisha, India
 
 Connect with me on [LinkedIn](#) and follow me on [Twitter](#).
