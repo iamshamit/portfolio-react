@@ -124,11 +124,12 @@
         line-height: 32px;
     }
     .about-skill{
-        gap:20px;
+        gap:0px;
         align-items: center;
     }
     .about-skill p{
-        font-size: 20px;
+        font-size: 15px;
+        min-width: 90px;
     }
     .about-skill hr{
         height: 6px;

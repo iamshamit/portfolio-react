@@ -53,10 +53,14 @@
 }
 @media(max-width:768px){
     .navbar{
-        margin: 20px 50px;
+        margin: 20px 25px;
     }
     .nav-connect{
         display: none;
+    }
+    .navbar-logo{
+        width: 138px;
+        height: 65px;
     }
     .nav-mob-open{
         display: block;
