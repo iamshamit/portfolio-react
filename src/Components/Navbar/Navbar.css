@@ -2,10 +2,10 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin: 20px 170px;
+    margin: 20px 90px;
 }
 .navbar-logo{
-    width: 200px;
+    width: 190px;
     height: 80px;
 }
 .navbar a{
@@ -17,7 +17,7 @@
     align-items: center;
     list-style: none;
     gap: 60px;
-    font-size: 20px;
+    font-size: 18px;
 }
 .nav-connect{
     padding: 20px 40px;
@@ -26,6 +26,7 @@
     font-size: 22px;
     cursor: pointer;
     transition: 0.3s;
+    margin-left: 20px;
 }
 .nav-connect:hover{
     transform: scale(1.05);
