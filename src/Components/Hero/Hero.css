@@ -65,7 +65,9 @@
 @media(max-width:768px){
     .hero img{
         margin-bottom: 5px;
-        width: 260px;
+        height: 230px;
+        width: 230px;
+        margin-top: 50px;
     }
     .hero h1{
         margin-top: 50px;
