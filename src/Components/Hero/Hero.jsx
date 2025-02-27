@@ -11,7 +11,7 @@ const Hero = () => {
         <p>I enjoy solving complex problems with innovative solutions and constantly seek opportunities to learn and contribute.</p>
         <div className="hero-action">
             <a target="_blank" href='https://www.linkedin.com/in/shamitmishra/'><div className="hero-connect">Connect With me</div></a>
-            <div className="hero-resume">My Resume</div>
+            <a target="_blank" href='https://drive.google.com/file/d/1ybrVKj01x9G3aZBIjdrPAEZtHY5Rd4FV/view?usp=sharing'><div className="hero-resume">My Resume</div></a>
         </div>
     </div>  
   )
