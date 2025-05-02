@@ -174,7 +174,7 @@ const Terminal = () => {
         break;
 
       case 'about':
-        terminal.write('John Doe - Full-Stack Developer\r\n');
+        terminal.write('Shamit Mishra - Full-Stack Developer\r\n');
         terminal.write('----------------------------\r\n');
         terminal.write('I build scalable web applications with modern technologies.\r\n');
         terminal.write('Passionate about cyberpunk aesthetics and clean, efficient code.\r\n');

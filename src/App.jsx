@@ -6,7 +6,6 @@ import Projects from './Components/Projects';
 import Contact from './Components/Contact';
 import Footer from './Components/Footer';
 import Terminal from './Components/Terminal';
-import Starfield from './Components/Starfield';
 
 export const ThemeContext = createContext();
 
@@ -36,7 +35,6 @@ const App = () => {
   return (
     <ThemeContext.Provider value={{ accentColor, setAccentColor, accentColors, isTerminalOpen, setIsTerminalOpen }}>
       <div className="relative min-h-screen bg-[#0D0D0D] text-white font-sans overflow-x-hidden">
-        <Starfield />
         <div className="scanlines"></div>
         {isTerminalOpen ? (
           <Terminal />

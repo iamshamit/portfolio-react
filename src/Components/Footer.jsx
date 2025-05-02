@@ -12,7 +12,7 @@ const Footer = () => {
       whileInView={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <p>&copy; 2025 John Doe. All rights reserved.</p>
+      <p>&copy; 2025 Shamit Mishra. All rights reserved.</p>
       <motion.div
         className={`mt-4 cursor-pointer font-mono ${accentColors[accentColor]} hover:shadow-glow transition-shadow`}
         onClick={() => setIsTerminalOpen(true)}
