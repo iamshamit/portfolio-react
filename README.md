@@ -4,17 +4,19 @@ Welcome to the repository for my personal portfolio website. This project showca
 
 ## Table of Contents
 
-- [Demo](#demo)
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Technologies Used](#technologies-used)
-- [License](#license)
-- [Contact](#contact)
+- [Shamit Mishra's Portfolio](#shamit-mishras-portfolio)
+  - [Table of Contents](#table-of-contents)
+  - [Demo](#demo)
+  - [Features](#features)
+  - [Installation](#installation)
+  - [Usage](#usage)
+  - [Technologies Used](#technologies-used)
+  - [License](#license)
+  - [Contact](#contact)
 
 ## Demo
 
-You can view the live demo of the website [here](shamit-portfolio.in.net).
+You can view the live demo of the website [here](shamit.is-a.dev).
 
 ## Features
 
