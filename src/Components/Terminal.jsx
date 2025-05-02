@@ -15,9 +15,7 @@ const Terminal = () => {
   const inputRef = useRef(null);
   const [currentCommand, setCurrentCommand] = useState('');
   
-  // The password - you should store this securely in a real app
-  // Consider using environment variables or a secure storage method
-  const SUDO_PASSWORD = "cyberpunk2077"; // Change this to your desired password
+  const SUDO_PASSWORD = import.meta.env.VITE_SUDO_PASSWORD || "cyberpunk2077";
 
   // Check if device is mobile
   useEffect(() => {

@@ -246,32 +246,6 @@ h1, h2, h3 {
   border-top: none;
 }
 
-/* Navigation styling */
-.nav-link {
-  position: relative;
-  margin: 0 15px;
-  text-decoration: none;
-  color: #fff;
-  font-family: 'Orbitron', sans-serif;
-  letter-spacing: 1px;
-  padding: 5px 0;
-}
-
-.nav-link::after {
-  content: '';
-  position: absolute;
-  width: 0;
-  height: 2px;
-  bottom: 0;
-  left: 0;
-  background-color: currentColor;
-  transition: width 0.3s ease;
-}
-
-.nav-link:hover::after {
-  width: 100%;
-}
-
 /* Form elements */
 .cyber-input {
   background-color: rgba(15, 15, 15, 0.8);
