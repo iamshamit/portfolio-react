@@ -45,7 +45,7 @@ const Hero = () => {
   };
 
   return (
-    <section className="min-h-screen flex flex-col justify-center items-center px-4 relative overflow-hidden">
+    <section className="min-h-screen flex flex-col justify-center items-center px-4 relative overflow-hidden mb-0 pb-0">
       {/* Starfield background specifically for Hero */}
       <div className="absolute inset-0 z-0">
         <Starfield />

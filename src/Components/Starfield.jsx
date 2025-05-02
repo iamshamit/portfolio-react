@@ -20,7 +20,7 @@ const Starfield = () => {
         x: Math.random() * canvas.width * 2 - canvas.width, // Start beyond the screen
         y: Math.random() * canvas.height * 2 - canvas.height, // Start beyond the screen
         radius: Math.random() * 1.5 + 0.5,
-        speed: Math.random() * 2 + 0.5,
+        speed: Math.random() * 2 ,
         parallax: Math.random() * 0.5 + 0.5,
       });
     }

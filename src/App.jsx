@@ -10,7 +10,7 @@ import Terminal from './Components/Terminal';
 export const ThemeContext = createContext();
 
 const App = () => {
-  const [accentColor, setAccentColor] = useState('neon-blue');
+  const [accentColor, setAccentColor] = useState('neon-green');
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
 
   const accentColors = {

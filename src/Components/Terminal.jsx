@@ -7,8 +7,25 @@ import { ThemeContext } from '../App';
 const Terminal = () => {
   const { accentColor, setAccentColor, setIsTerminalOpen } = useContext(ThemeContext);
   const [term, setTerm] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
   const terminalRef = useRef(null);
   const fitAddonRef = useRef(null);
+  const inputRef = useRef(null);
+  const [currentCommand, setCurrentCommand] = useState('');
+
+  // Check if device is mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
+  }, []);
 
   // Function to get theme color based on accentColor
   const getThemeColor = (color) => {
@@ -33,7 +50,7 @@ const Terminal = () => {
     const terminal = new XTerm({
       cursorBlink: true,
       fontFamily: 'Space Mono, monospace',
-      fontSize: 14,
+      fontSize: isMobile ? 12 : 14, // Smaller font for mobile
       theme: {
         background: '#070707',
         foreground: getThemeColor(accentColor),
@@ -41,6 +58,8 @@ const Terminal = () => {
         cursorAccent: '#000000',
         selection: 'rgba(255, 255, 255, 0.3)',
       },
+      convertEol: true, // Important for proper line breaks
+      rendererType: 'canvas', // Better performance
     });
 
     // Create and load fit addon
@@ -62,58 +81,60 @@ const Terminal = () => {
     // Initial prompt
     terminal.write('~/neo-portfolio $ ');
 
-    // Handle key events
-    terminal.onKey(({ key, domEvent }) => {
-      if (domEvent.key === 'Enter') {
-        terminal.write('\r\n');
-        const cmd = command.trim();
-        if (cmd) {
-          history.push(cmd);
-          historyIndex = history.length;
-          processCommand(cmd, terminal);
-        } else {
-          terminal.write('~/neo-portfolio $ ');
-        }
-        command = '';
-      } else if (domEvent.key === 'Backspace') {
-        if (command.length > 0) {
-          command = command.slice(0, -1);
-          terminal.write('\b \b');
-        }
-      } else if (domEvent.key === 'ArrowUp') {
-        if (history.length > 0 && historyIndex > 0) {
-          historyIndex--;
-          terminal.write('\r\x1B[K~/neo-portfolio $ ' + history[historyIndex]);
-          command = history[historyIndex];
-        }
-      } else if (domEvent.key === 'ArrowDown') {
-        if (historyIndex < history.length - 1) {
-          historyIndex++;
-          terminal.write('\r\x1B[K~/neo-portfolio $ ' + history[historyIndex]);
-          command = history[historyIndex];
-        } else {
-          historyIndex = history.length;
-          terminal.write('\r\x1B[K~/neo-portfolio $ ');
-          command = '';
-        }
-      } else if (domEvent.key === 'Tab') {
-        domEvent.preventDefault();
-        const suggestions = ['help', 'about', 'skills', 'projects', 'contact', 'clear', 'exit', 'matrix', 'hack', 'game', 'accent'];
-        const matchingSuggestions = suggestions.filter((s) => s.startsWith(command));
-
-        if (matchingSuggestions.length === 1) {
-          command = matchingSuggestions[0];
-          terminal.write('\r\x1B[K~/neo-portfolio $ ' + command);
-        } else if (matchingSuggestions.length > 1) {
+    // Handle key events only on desktop
+    if (!isMobile) {
+      terminal.onKey(({ key, domEvent }) => {
+        if (domEvent.key === 'Enter') {
           terminal.write('\r\n');
-          terminal.write(matchingSuggestions.join('  ') + '\r\n');
-          terminal.write('~/neo-portfolio $ ' + command);
+          const cmd = command.trim();
+          if (cmd) {
+            history.push(cmd);
+            historyIndex = history.length;
+            processCommand(cmd, terminal);
+          } else {
+            terminal.write('~/neo-portfolio $ ');
+          }
+          command = '';
+        } else if (domEvent.key === 'Backspace') {
+          if (command.length > 0) {
+            command = command.slice(0, -1);
+            terminal.write('\b \b');
+          }
+        } else if (domEvent.key === 'ArrowUp') {
+          if (history.length > 0 && historyIndex > 0) {
+            historyIndex--;
+            terminal.write('\r\x1B[K~/neo-portfolio $ ' + history[historyIndex]);
+            command = history[historyIndex];
+          }
+        } else if (domEvent.key === 'ArrowDown') {
+          if (historyIndex < history.length - 1) {
+            historyIndex++;
+            terminal.write('\r\x1B[K~/neo-portfolio $ ' + history[historyIndex]);
+            command = history[historyIndex];
+          } else {
+            historyIndex = history.length;
+            terminal.write('\r\x1B[K~/neo-portfolio $ ');
+            command = '';
+          }
+        } else if (domEvent.key === 'Tab') {
+          domEvent.preventDefault();
+          const suggestions = ['help', 'about', 'skills', 'projects', 'contact', 'clear', 'exit', 'matrix', 'hack', 'game', 'accent'];
+          const matchingSuggestions = suggestions.filter((s) => s.startsWith(command));
+
+          if (matchingSuggestions.length === 1) {
+            command = matchingSuggestions[0];
+            terminal.write('\r\x1B[K~/neo-portfolio $ ' + command);
+          } else if (matchingSuggestions.length > 1) {
+            terminal.write('\r\n');
+            terminal.write(matchingSuggestions.join('  ') + '\r\n');
+            terminal.write('~/neo-portfolio $ ' + command);
+          }
+        } else if (key.charCodeAt(0) >= 32 && key.charCodeAt(0) <= 126) {
+          command += key;
+          terminal.write(key);
         }
-      } else if (key.charCodeAt(0) >= 32 && key.charCodeAt(0) <= 126) {
-        command += key;
-        terminal.write(key);
-      }
-    });
+      });
+    }
 
     // Handle container resize with ResizeObserver
     const resizeObserver = new ResizeObserver(() => {
@@ -136,7 +157,7 @@ const Terminal = () => {
       setTerm(null);
       fitAddonRef.current = null;
     };
-  }, [accentColor]);
+  }, [accentColor, isMobile]);
 
   // Update terminal theme when accent color changes
   useEffect(() => {
@@ -150,6 +171,16 @@ const Terminal = () => {
       term.refresh(0, term.rows - 1);
     }
   }, [accentColor, term]);
+
+  // Handle mobile input submission
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (term && currentCommand.trim()) {
+      term.write(currentCommand + '\r\n');
+      processCommand(currentCommand.trim(), term);
+      setCurrentCommand('');
+    }
+  };
 
   const processCommand = (cmd, terminal) => {
     const parts = cmd.split(' ');
@@ -272,6 +303,7 @@ const Terminal = () => {
   const runMatrixEffect = (terminal) => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789αβγδεζηθικλμνξοπρστυφχψω';
     const columns = Math.floor(terminal.cols / 2);
+    const rows = Math.min(terminal.rows, isMobile ? 10 : 20); // Limit rows on mobile
     const drops = Array(columns).fill(0);
 
     let interval = setInterval(() => {
@@ -281,24 +313,70 @@ const Terminal = () => {
         output += '\x1b[32m' + chars[charIndex] + ' ';
 
         drops[i]++;
-        if (drops[i] > terminal.rows * 0.6 && Math.random() > 0.95) {
+        if (drops[i] > rows * 0.6 && Math.random() > 0.95) {
           drops[i] = 0;
         }
       }
       terminal.write('\r\n' + output);
 
-      // Stop after 15 iterations
-      if (drops.filter((d) => d > 15).length > columns * 0.8) {
+      // Stop after fewer iterations on mobile
+      if (drops.filter((d) => d > (isMobile ? 8 : 15)).length > columns * 0.8) {
         clearInterval(interval);
         terminal.writeln('\x1b[0m\r\n\r\nMatrix simulation complete.\r\n');
         terminal.write('~/neo-portfolio $ ');
       }
-    }, 150);
+    }, isMobile ? 200 : 150); // Slower on mobile for better performance
   };
 
+  // Common terminal commands for quick access on mobile
+  const commonCommands = ['help', 'about', 'skills', 'projects', 'contact', 'clear', 'exit'];
+
   return (
-    <div className="fixed inset-0 bg-[#070707] z-50 animate-slide-in p-4">
-      <div ref={terminalRef} id="terminal" className="w-full h-full overflow-hidden rounded-md" />
+    <div className="fixed inset-0 bg-[#070707] z-50 animate-slide-in p-4 flex flex-col">
+      <div ref={terminalRef} id="terminal" className="w-full flex-grow overflow-hidden rounded-md" />
+      
+      {/* Mobile input interface */}
+      {isMobile && (
+        <div className="mt-4">
+          <form onSubmit={handleSubmit} className="flex">
+            <span className={`hidden md:inline-block text-${getThemeColor(accentColor)} mr-2`}>~/neo-portfolio $</span>
+            <input
+              ref={inputRef}
+              type="text"
+              value={currentCommand}
+              onChange={(e) => setCurrentCommand(e.target.value)}
+              className="flex-grow bg-black/50 border border-gray-700 rounded px-3 py-2 text-gray-200 focus:outline-none focus:border-blue-500"
+              placeholder="Type command here..."
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
+            />
+            <button 
+              type="submit" 
+              className={`ml-2 px-4 py-2 border border-${getThemeColor(accentColor)} rounded text-${getThemeColor(accentColor)}`}
+            >
+              Send
+            </button>
+          </form>
+          
+          {/* Quick access buttons for common commands */}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {commonCommands.map(cmd => (
+              <button
+                key={cmd}
+                onClick={() => {
+                  setCurrentCommand(cmd);
+                  if (inputRef.current) inputRef.current.focus();
+                }}
+                className="px-3 py-1 text-sm border border-gray-700 rounded hover:border-gray-500"
+              >
+                {cmd}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
