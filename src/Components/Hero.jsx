@@ -2,24 +2,12 @@ import React, { useContext, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ThemeContext } from '../App';
 import Typical from 'react-typical';
-import { Howl } from 'howler';
 
 const Hero = () => {
   const { accentColor, accentColors } = useContext(ThemeContext);
   const [showCursor, setShowCursor] = useState(true);
   const [hasInteracted, setHasInteracted] = useState(false);
 
-  // Cyberpunk UI sound effects
-  const uiSounds = {
-    hover: new Howl({
-      src: ['https://assets.codepen.io/154877/hover.mp3'],
-      volume: 0.2,
-    }),
-    click: new Howl({
-      src: ['https://assets.codepen.io/154877/click.mp3'],
-      volume: 0.3,
-    }),
-  };
 
   useEffect(() => {
     // Hide cursor after typing animation finishes
@@ -30,14 +18,9 @@ const Hero = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleInteractionSound = (type) => {
+  const handleInteractionSound = () => {
     if (!hasInteracted) {
       setHasInteracted(true);
-    }
-    if (type === 'hover') {
-      uiSounds.hover.play();
-    } else if (type === 'click') {
-      uiSounds.click.play();
     }
   };
 
@@ -87,11 +70,11 @@ const Hero = () => {
         >
           <span className="inline-block">
             <Typical
-              steps={['', 1000, 'Full-Stack Developer', 2000, 'UI/UX Enthusiast', 2000, 'Cyberpunk Aficionado', 2000]}
-              loop={1}
+              steps={['Full-Stack Developer', 2000, 'UI/UX Enthusiast', 2000, 'College Student', 2000]}
+              loop={Infinity}
               wrapper="span"
             />
-            <span className={`${showCursor ? 'animate-blink' : 'opacity-0'} ${accentColors[accentColor]}`}>|</span>
+            <span className={`${showCursor ? 'animate-blink' : 'opacity-0'} ${accentColors[accentColor]}`}></span>
           </span>
         </motion.div>
 

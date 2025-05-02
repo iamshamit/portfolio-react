@@ -12,34 +12,58 @@ const Starfield = () => {
     const resizeCanvas = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
+      
+      // Re-initialize stars on resize to fill screen properly
+      stars.length = 0;
+      for (let i = 0; i < numStars; i++) {
+        stars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          radius: Math.random() * 1.5 + 0.5,
+          speedX: Math.random() * 0.5 + 0.1, // Slower horizontal speed
+          speedY: Math.random() * 0.3 + 0.05, // Even slower vertical speed
+          parallax: Math.random() * 0.5 + 0.5,
+        });
+      }
     };
+    
     resizeCanvas();
-
-    for (let i = 0; i < numStars; i++) {
-      stars.push({
-        x: Math.random() * canvas.width * 2 - canvas.width, // Start beyond the screen
-        y: Math.random() * canvas.height * 2 - canvas.height, // Start beyond the screen
-        radius: Math.random() * 1.5 + 0.5,
-        speed: Math.random() * 2 + 1,
-        parallax: Math.random() * 0.5 + 0.5,
-      });
-    }
 
     let animationFrame;
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      
+      // Different star colors for depth perception
       stars.forEach((star) => {
+        // Adjust opacity based on radius (smaller stars are dimmer)
+        const opacity = 0.4 + (star.radius / 2);
+        
+        // Change color slightly based on parallax for depth
+        if (star.parallax > 0.8) {
+          ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+        } else if (star.parallax > 0.5) {
+          ctx.fillStyle = `rgba(220, 220, 255, ${opacity})`;
+        } else {
+          ctx.fillStyle = `rgba(180, 180, 220, ${opacity * 0.8})`;
+        }
+        
         ctx.beginPath();
         ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
         ctx.fill();
-        star.x += star.speed;
-        star.y += star.speed;
-        if (star.x > canvas.width || star.y > canvas.height) {
-          star.x = Math.random() * canvas.width * 2 - canvas.width; // Reset beyond the screen
-          star.y = Math.random() * canvas.height * 2 - canvas.height; // Reset beyond the screen
+        
+        // Update position
+        star.x += star.speedX;
+        star.y += star.speedY;
+        
+        // Reset stars when they move off-screen
+        if (star.x > canvas.width) {
+          star.x = 0;
+        }
+        if (star.y > canvas.height) {
+          star.y = 0;
         }
       });
+      
       animationFrame = requestAnimationFrame(animate);
     };
 
@@ -50,16 +74,31 @@ const Starfield = () => {
       const { clientX, clientY } = e;
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
+      
+      // Calculate normalized mouse position (-1 to 1)
+      const mouseXNorm = (clientX - centerX) / centerX;
+      const mouseYNorm = (clientY - centerY) / centerY;
+      
       stars.forEach((star) => {
-        const dx = (clientX - centerX) * star.parallax * 0.005;
-        const dy = (clientY - centerY) * star.parallax * 0.005;
-        star.x += dx * 0.1;
-        star.y += dy * 0.1;
+        // Apply parallax effect based on star's parallax value
+        const parallaxStrength = 2; // Adjust strength of effect
+        const dx = mouseXNorm * star.parallax * parallaxStrength;
+        const dy = mouseYNorm * star.parallax * parallaxStrength;
+        
+        star.x += dx;
+        star.y += dy;
+        
+        // Keep stars within boundaries with some buffer
+        if (star.x < -20) star.x = canvas.width + 20;
+        if (star.x > canvas.width + 20) star.x = -20;
+        if (star.y < -20) star.y = canvas.height + 20;
+        if (star.y > canvas.height + 20) star.y = -20;
       });
     };
 
     window.addEventListener('resize', resizeCanvas);
     window.addEventListener('mousemove', handleMouseMove);
+    
     return () => {
       window.removeEventListener('resize', resizeCanvas);
       window.removeEventListener('mousemove', handleMouseMove);
@@ -70,7 +109,7 @@ const Starfield = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 pointer-events-auto"
+      className="fixed inset-0 pointer-events-none"
       style={{
         zIndex: -2,
         display: 'block',
