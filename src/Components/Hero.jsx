@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ThemeContext } from '../App';
-import Typical from 'react-typical';
+import { TypeAnimation } from 'react-type-animation';
 
 const Hero = () => {
   const { accentColor, accentColors } = useContext(ThemeContext);
@@ -69,10 +69,11 @@ const Hero = () => {
           className="mb-8 text-xl md:text-2xl text-gray-300 font-mono"
         >
           <span className="inline-block">
-            <Typical
-              steps={['Full-Stack Developer', 2000, 'UI/UX Enthusiast', 2000, 'College Student', 2000]}
-              loop={Infinity}
+            <TypeAnimation
+              sequence={['',1500,'Full-Stack Developer', 2000, 'UI/UX Enthusiast', 2000, 'College Student', 2000]}
               wrapper="span"
+              speed={50}
+              repeat={Infinity}
             />
             <span className={`${showCursor ? 'animate-blink' : 'opacity-0'} ${accentColors[accentColor]}`}></span>
           </span>
