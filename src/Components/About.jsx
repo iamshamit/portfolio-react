@@ -30,7 +30,7 @@ const About = () => {
 };`;
 
   return (
-    <section id="about" className="pt-0 mt-0 py-24 px-4 relative">
+    <section id="about" className="py-24 px-4 relative">
       {/* Background grid accent */}
       <div className="absolute right-0 top-20 w-64 h-64 border border-dashed rounded-full opacity-10 blur-sm"></div>
       <div className={`absolute left-10 bottom-20 w-32 h-32 ${accentColors[accentColor].replace('text-', 'bg-').replace('border-', 'bg-').replace('shadow-', 'bg-')} opacity-5 rounded-full filter blur-xl`}></div>
