@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ThemeContext } from '../App';
 import { TypeAnimation } from 'react-type-animation';
+import Starfield from './Starfield';
 
 const Hero = () => {
   const { accentColor, accentColors } = useContext(ThemeContext);
@@ -45,9 +46,14 @@ const Hero = () => {
 
   return (
     <section className="min-h-screen flex flex-col justify-center items-center px-4 relative overflow-hidden">
+      {/* Starfield background specifically for Hero */}
+      <div className="absolute inset-0 z-0">
+        <Starfield />
+      </div>
+      
       {/* Glitch overlay effect */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#0D0D0D]/80 z-0"></div>
-      <div className="absolute inset-0 bg-grid-pattern opacity-10 z-0"></div>
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#0D0D0D]/80 z-1"></div>
+      <div className="absolute inset-0 bg-grid-pattern opacity-10 z-1"></div>
       
       <motion.div 
         className="max-w-4xl mx-auto text-center z-10"
@@ -60,7 +66,7 @@ const Hero = () => {
           variants={itemVariants}
         >
           <h1 className={`text-6xl md:text-8xl font-bold mb-4 ${accentColors[accentColor]} glitch-text`}>
-            John Doe
+            Shamit Mishra
           </h1>
         </motion.div>
 

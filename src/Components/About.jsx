@@ -22,7 +22,7 @@ const About = () => {
 
   // Terminal-style code snippet
   const codeSnippet = `const developer = {
-  name: "John Doe",
+  name: "Shamit Mishra",
   type: "Full-Stack Developer",
   location: "Neo Tokyo",
   skills: ["React", "Node.js", "Python"],
