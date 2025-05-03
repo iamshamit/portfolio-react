@@ -57,7 +57,7 @@ const Skills = () => {
   };
 
   return (
-    <section id="skills" className="py-24 px-4 bg-black/30">
+    <section id="skills" className="py-24 px-4">
       <div className="max-w-4xl mx-auto relative">
         {/* Decorative elements */}
         <div className={`absolute -top-10 -left-10 w-40 h-40 ${accentColors[accentColor].replace('text-', 'border-').replace('shadow-', '')} border-2 rounded-lg opacity-10 transform -rotate-12`}></div>

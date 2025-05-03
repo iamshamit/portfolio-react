@@ -51,10 +51,6 @@ const Hero = () => {
         <Starfield />
       </div>
       
-      {/* Glitch overlay effect */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#0D0D0D]/80 z-1"></div>
-      <div className="absolute inset-0 bg-grid-pattern  z-1"></div>
-      
       <motion.div 
         className="max-w-4xl mx-auto text-center z-10"
         variants={containerVariants}

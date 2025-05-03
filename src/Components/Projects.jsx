@@ -118,7 +118,7 @@ const Projects = () => {
     <section id="projects" className="py-24 px-4 relative">
       {/* Decorative elements */}
       <div className={`absolute top-40 right-10 w-32 h-32 border-2 ${accentColors[accentColor].replace('text-', 'border-').replace('shadow-', '')} rounded-full opacity-10 blur-sm`}></div>
-      <div className="absolute left-0 bottom-0 w-full h-1/3 bg-gradient-to-t from-black/20 to-transparent z-0"></div>
+      <div className="absolute left-0 bottom-0 w-full h-1/3 z-0"></div>
       
       <div className="max-w-6xl mx-auto">
         <motion.div
