@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import { useContext } from 'react';
 import { motion } from 'framer-motion';
 import { ThemeContext } from '../App';
 
@@ -46,20 +46,20 @@ const About = () => {
             className={`text-4xl font-bold mb-12 ${accentColors[accentColor]}`}
             variants={itemVariants}
           >
-            // About Me
+            {'// About Me'}
           </motion.h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <motion.div variants={itemVariants}>
               <div className="space-y-4 text-gray-300">
                 <p className="text-lg">
-                  I'm a <span className={accentColors[accentColor]}>full-stack developer</span> with a passion for creating immersive digital experiences. With 5+ years of experience in web development, I specialize in building scalable applications with modern frameworks and technologies.
+                  I&apos;m a <span className={accentColors[accentColor]}>full-stack developer</span> with a passion for creating immersive digital experiences. With 5+ years of experience in web development, I specialize in building scalable applications with modern frameworks and technologies.
                 </p>
                 <p>
                   My approach combines technical expertise with creative problem-solving to deliver solutions that not only meet functional requirements but also provide engaging user experiences.
                 </p>
                 <p>
-                  When I'm not coding, you can find me exploring the latest in AI technology, contributing to open-source projects, or designing retro-futuristic interfaces.
+                  When I&apos;m not coding, you can find me exploring the latest in AI technology, contributing to open-source projects, or designing retro-futuristic interfaces.
                 </p>
               </div>
               

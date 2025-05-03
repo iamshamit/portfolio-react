@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import { useContext, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ThemeContext } from '../App';
 
@@ -73,7 +73,7 @@ const Skills = () => {
             className={`text-4xl font-bold mb-12 ${accentColors[accentColor]}`}
             variants={itemVariants}
           >
-            // Technical Skills
+            {'// Technical Skills'}
           </motion.h2>
 
           <motion.div 

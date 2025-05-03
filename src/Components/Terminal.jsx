@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
 import { Terminal as XTerm } from 'xterm';
 import { FitAddon } from 'xterm-addon-fit';
 import 'xterm/css/xterm.css';
@@ -15,7 +15,7 @@ const Terminal = () => {
   const inputRef = useRef(null);
   const [currentCommand, setCurrentCommand] = useState('');
   
-  const SUDO_PASSWORD = import.meta.env.VITE_SUDO_PASSWORD || "cyberpunk2077";
+  const SUDO_PASSWORD = import.meta.env.VITE_SUDO_PASSWORD;
 
   // Check if device is mobile
   useEffect(() => {
@@ -206,7 +206,7 @@ const Terminal = () => {
       setTerm(null);
       fitAddonRef.current = null;
     };
-  }, [accentColor, isMobile, isPasswordPrompt]);
+  }, [accentColor, isMobile, isPasswordPrompt,SUDO_PASSWORD,isAdmin]);
 
   // Update terminal theme when accent color changes
   useEffect(() => {
