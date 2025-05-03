@@ -14,14 +14,40 @@ const ScrollToTop = () => {
       
       const targetElement = document.querySelector(targetId);
       if (targetElement) {
-        // Scroll smoothly to the element
-        targetElement.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
-        });
+        // Get the target element's position
+        const targetPosition = targetElement.getBoundingClientRect().top;
+        const startPosition = window.pageYOffset;
+        const distance = targetPosition;
         
-        // Update URL but without causing a jump
-        window.history.pushState(null, '', targetId);
+        // Implement custom smooth scrolling
+        const duration = 800; // ms
+        let start = null;
+        
+        const step = (timestamp) => {
+          if (!start) start = timestamp;
+          const progress = timestamp - start;
+          
+          // Easing function - easeInOutCubic
+          const easeInOutCubic = (t) => {
+            return t < 0.5
+              ? 4 * t * t * t
+              : 1 - Math.pow(-2 * t + 2, 3) / 2;
+          };
+          
+          const time = Math.min(1, progress / duration);
+          const easedTime = easeInOutCubic(time);
+          
+          window.scrollTo(0, startPosition + distance * easedTime);
+          
+          if (progress < duration) {
+            window.requestAnimationFrame(step);
+          } else {
+            // Update URL but without causing a jump
+            window.history.pushState(null, '', targetId);
+          }
+        };
+        
+        window.requestAnimationFrame(step);
       }
     };
     
