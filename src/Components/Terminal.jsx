@@ -15,7 +15,7 @@ const Terminal = () => {
   const inputRef = useRef(null);
   const [currentCommand, setCurrentCommand] = useState('');
   
-  const SUDO_PASSWORD = import.meta.env.VITE_SUDO_PASSWORD;
+  const SUDO_PASSWORD = import.meta.env.VITE_SUDO_PASSWORD || "cyberpunk2077";
 
   // Check if device is mobile
   useEffect(() => {
