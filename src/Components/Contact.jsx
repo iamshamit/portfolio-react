@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import { useContext, useState } from 'react';
 import { ThemeContext } from '../App';
 import { motion } from 'framer-motion';
 import { Howl } from 'howler';
@@ -88,14 +88,14 @@ const Contact = () => {
             className={`text-4xl font-bold mb-12 ${accentColors[accentColor]}`}
             variants={itemVariants}
           >
-            // Contact
+            {'// Contact'}
           </motion.h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <motion.div variants={itemVariants}>
               <h3 className="text-2xl font-medium mb-6">Get In Touch</h3>
               <p className="text-gray-300 mb-8">
-                Have a project in mind or want to collaborate? Feel free to reach out. I'm always open to discussing new opportunities and ideas.
+                Have a project in mind or want to collaborate? Feel free to reach out. I&apos;m always open to discussing new opportunities and ideas.
               </p>
               
               <div className="space-y-4 mb-8">

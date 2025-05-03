@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ThemeContext } from '../App';
 import { TypeAnimation } from 'react-type-animation';
