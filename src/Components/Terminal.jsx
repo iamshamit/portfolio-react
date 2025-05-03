@@ -10,12 +10,26 @@ const Terminal = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isPasswordPrompt, setIsPasswordPrompt] = useState(false);
+  const [todos, setTodos] = useState([]);
   const terminalRef = useRef(null);
   const fitAddonRef = useRef(null);
   const inputRef = useRef(null);
   const [currentCommand, setCurrentCommand] = useState('');
   
   const SUDO_PASSWORD = import.meta.env.VITE_SUDO_PASSWORD;
+
+  // Load todos from localStorage
+  useEffect(() => {
+    const storedTodos = localStorage.getItem('terminal-todos');
+    if (storedTodos) {
+      setTodos(JSON.parse(storedTodos));
+    }
+  }, []);
+
+  // Save todos to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('terminal-todos', JSON.stringify(todos));
+  }, [todos]);
 
   // Check if device is mobile
   useEffect(() => {
@@ -161,11 +175,11 @@ const Terminal = () => {
           }
         } else if (domEvent.key === 'Tab') {
           domEvent.preventDefault();
-          const allCommands = ['help', 'about', 'skills', 'projects', 'contact', 'clear', 'exit', 'matrix', 'hack', 'game', 'accent', 'sudo'];
+          const allCommands = ['help', 'about', 'skills', 'projects', 'contact', 'clear', 'exit', 'matrix', 'hack', 'game', 'accent', 'sudo', 'todo', 'addTodo', 'listTodo', 'completeTodo', 'deleteTodo'];
           
           // Add admin commands if user is authenticated
           if (isAdmin) {
-            allCommands.push('system', 'decrypt', 'network', 'override');
+            allCommands.push('system', 'decrypt', 'network', 'override', 'todoAdmin');
           }
           
           const matchingSuggestions = allCommands.filter((s) => s.startsWith(command));
@@ -206,7 +220,7 @@ const Terminal = () => {
       setTerm(null);
       fitAddonRef.current = null;
     };
-  }, [accentColor, isMobile, isPasswordPrompt,SUDO_PASSWORD,isAdmin]);
+  }, [accentColor, isMobile, isPasswordPrompt, SUDO_PASSWORD, isAdmin]);
 
   // Update terminal theme when accent color changes
   useEffect(() => {
@@ -244,6 +258,192 @@ const Terminal = () => {
     }
   };
 
+  // Todo functions
+  const addTodo = (text) => {
+    const newTodo = {
+      id: Date.now().toString(),
+      text,
+      completed: false,
+      timestamp: new Date().toLocaleString()
+    };
+    setTodos([...todos, newTodo]);
+    return newTodo;
+  };
+
+  const completeTodo = (id) => {
+    const updatedTodos = todos.map(todo => 
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    );
+    setTodos(updatedTodos);
+    return updatedTodos.find(todo => todo.id === id);
+  };
+
+  const deleteTodo = (id) => {
+    const todoToDelete = todos.find(todo => todo.id === id);
+    setTodos(todos.filter(todo => todo.id !== id));
+    return todoToDelete;
+  };
+
+  // Handle ToDo Commands
+  const handleTodoCommand = (command, args, terminal) => {
+    switch (command) {
+      case 'todo':
+      case 'help':
+        terminal.write('Todo Commands:\r\n');
+        terminal.write('  addTodo <task>       Add a new todo\r\n');
+        terminal.write('  listTodo             List all todos\r\n');
+        terminal.write('  completeTodo <id>    Toggle completion status\r\n');
+        terminal.write('  deleteTodo <id>      Remove a todo\r\n');
+        if (isAdmin) {
+          terminal.write('  todoAdmin            Advanced todo management (admin only)\r\n');
+        }
+        terminal.write('\r\n~/neo-portfolio $ ');
+        break;
+
+      case 'add':
+        if (args.length === 0) {
+          terminal.write('Usage: addTodo <task>\r\n');
+          terminal.write('Example: addTodo Fix login page\r\n');
+        } else {
+          const todoText = args.join(' ');
+          const newTodo = addTodo(todoText);
+          terminal.write(`Todo added: [${newTodo.id}] ${todoText}\r\n`);
+        }
+        terminal.write('~/neo-portfolio $ ');
+        break;
+
+      case 'list':
+        if (todos.length === 0) {
+          terminal.write('No todos found. Use addTodo to create one.\r\n');
+        } else {
+          terminal.write('ID    | Status    | Task\r\n');
+          terminal.write('----------------------------\r\n');
+          todos.forEach(todo => {
+            const status = todo.completed ? 'DONE' : 'PENDING';
+            terminal.write(`${todo.id.slice(-4)} | ${status.padEnd(9)} | ${todo.text}\r\n`);
+          });
+        }
+        terminal.write('~/neo-portfolio $ ');
+        break;
+
+      case 'complete':
+        if (args.length === 0) {
+          terminal.write('Usage: completeTodo <id>\r\n');
+          terminal.write('Example: completeTodo 1234\r\n');
+        } else {
+          const id = args[0];
+          const matchingTodos = todos.filter(todo => todo.id.endsWith(id));
+          
+          if (matchingTodos.length === 0) {
+            terminal.write(`Error: No todo with ID ending in ${id} found\r\n`);
+          } else if (matchingTodos.length > 1) {
+            terminal.write(`Error: Multiple todos match ID ${id}. Please use a more specific ID.\r\n`);
+            terminal.write('Matching todos:\r\n');
+            matchingTodos.forEach(todo => {
+              terminal.write(`${todo.id}: ${todo.text}\r\n`);
+            });
+          } else {
+            const updatedTodo = completeTodo(matchingTodos[0].id);
+            terminal.write(`Todo status updated: [${updatedTodo.id.slice(-4)}] ${updatedTodo.text} - ${updatedTodo.completed ? 'DONE' : 'PENDING'}\r\n`);
+          }
+        }
+        terminal.write('~/neo-portfolio $ ');
+        break;
+
+      case 'delete':
+        if (args.length === 0) {
+          terminal.write('Usage: deleteTodo <id>\r\n');
+          terminal.write('Example: deleteTodo 1234\r\n');
+        } else {
+          const id = args[0];
+          const matchingTodos = todos.filter(todo => todo.id.endsWith(id));
+          
+          if (matchingTodos.length === 0) {
+            terminal.write(`Error: No todo with ID ending in ${id} found\r\n`);
+          } else if (matchingTodos.length > 1) {
+            terminal.write(`Error: Multiple todos match ID ${id}. Please use a more specific ID.\r\n`);
+            terminal.write('Matching todos:\r\n');
+            matchingTodos.forEach(todo => {
+              terminal.write(`${todo.id}: ${todo.text}\r\n`);
+            });
+          } else {
+            const deletedTodo = deleteTodo(matchingTodos[0].id);
+            terminal.write(`Todo deleted: [${deletedTodo.id.slice(-4)}] ${deletedTodo.text}\r\n`);
+          }
+        }
+        terminal.write('~/neo-portfolio $ ');
+        break;
+
+      case 'admin':
+        if (!isAdmin) {
+          terminal.write('Permission denied: todoAdmin requires admin privileges\r\n');
+          terminal.write('Try using sudo to elevate privileges\r\n');
+        } else {
+          terminal.write('Todo Admin Panel:\r\n');
+          terminal.write('----------------\r\n');
+          terminal.write(`Total todos: ${todos.length}\r\n`);
+          terminal.write(`Completed: ${todos.filter(t => t.completed).length}\r\n`);
+          terminal.write(`Pending: ${todos.filter(t => !t.completed).length}\r\n\r\n`);
+          
+          terminal.write('Admin Commands:\r\n');
+          terminal.write('  todoAdmin clear       Clear all todos\r\n');
+          terminal.write('  todoAdmin export      Export todos as JSON\r\n');
+          terminal.write('  todoAdmin stats       Show detailed statistics\r\n\r\n');
+          
+          if (args.length > 0) {
+            switch(args[0]) {
+              case 'clear':
+                terminal.write('WARNING: This will delete ALL todos\r\n');
+                terminal.write('Type "CONFIRM" to proceed: ');
+                // In a real implementation, you'd wait for input here
+                // For demo purposes, we'll simulate auto-confirmation
+                setTimeout(() => {
+                  terminal.write('CONFIRM\r\n');
+                  setTodos([]);
+                  terminal.write('All todos cleared successfully\r\n');
+                  terminal.write('~/neo-portfolio $ ');
+                }, 1500);
+                return; // Skip the prompt at the end
+                
+              case 'export':
+                const exportData = JSON.stringify(todos, null, 2);
+                terminal.write('Exporting todos...\r\n');
+                terminal.write('-------------------\r\n');
+                terminal.write(exportData + '\r\n');
+                terminal.write('-------------------\r\n');
+                terminal.write('Copy the above JSON data or save to a file\r\n');
+                break;
+                
+              case 'stats':
+                terminal.write('Todo Statistics:\r\n');
+                terminal.write('---------------\r\n');
+                terminal.write(`Total todos created: ${todos.length}\r\n`);
+                terminal.write(`Completion rate: ${Math.round((todos.filter(t => t.completed).length / (todos.length || 1)) * 100)}%\r\n`);
+                
+                if (todos.length > 0) {
+                  const oldestTodo = todos.reduce((oldest, todo) => 
+                    new Date(todo.timestamp) < new Date(oldest.timestamp) ? todo : oldest, todos[0]);
+                  
+                  const newestTodo = todos.reduce((newest, todo) => 
+                    new Date(todo.timestamp) > new Date(newest.timestamp) ? todo : newest, todos[0]);
+                  
+                  terminal.write(`Oldest todo: ${oldestTodo.text} (${oldestTodo.timestamp})\r\n`);
+                  terminal.write(`Newest todo: ${newestTodo.text} (${newestTodo.timestamp})\r\n`);
+                }
+                break;
+            }
+          }
+        }
+        terminal.write('~/neo-portfolio $ ');
+        break;
+
+      default:
+        terminal.write(`Unknown todo command: ${command}\r\n`);
+        terminal.write('Type "todo help" for available commands\r\n');
+        terminal.write('~/neo-portfolio $ ');
+    }
+  };
+
   const processCommand = (cmd, terminal) => {
     const parts = cmd.split(' ');
     const baseCommand = parts[0].toLowerCase();
@@ -263,10 +463,35 @@ const Terminal = () => {
     }
     
     // Admin-only commands
-    if (['system', 'decrypt', 'network', 'override'].includes(baseCommand) && !isAdmin) {
+    if (['system', 'decrypt', 'network', 'override', 'todoadmin'].includes(baseCommand) && !isAdmin) {
       terminal.write(`Permission denied: '${baseCommand}' requires admin privileges\r\n`);
       terminal.write('Try using sudo to elevate privileges\r\n');
       terminal.write('~/neo-portfolio $ ');
+      return;
+    }
+
+    // Todo commands
+    if (baseCommand === 'todo') {
+      if (args.length === 0) {
+        handleTodoCommand('help', [], terminal);
+      } else {
+        handleTodoCommand(args[0], args.slice(1), terminal);
+      }
+      return;
+    } else if (baseCommand === 'addtodo') {
+      handleTodoCommand('add', args, terminal);
+      return;
+    } else if (baseCommand === 'listtodo') {
+      handleTodoCommand('list', [], terminal);
+      return;
+    } else if (baseCommand === 'completetodo') {
+      handleTodoCommand('complete', args, terminal);
+      return;
+    } else if (baseCommand === 'deletetodo') {
+      handleTodoCommand('delete', args, terminal);
+      return;
+    } else if (baseCommand === 'todoadmin') {
+      handleTodoCommand('admin', args, terminal);
       return;
     }
 
@@ -285,6 +510,12 @@ const Terminal = () => {
         terminal.write('  game                Play terminal game\r\n');
         terminal.write('  accent [color]      Change theme color (neon-blue, neon-green, neon-purple)\r\n');
         terminal.write('  sudo                Elevate to admin privileges\r\n');
+        terminal.write('\r\nTodo commands:\r\n');
+        terminal.write('  todo                Todo help menu\r\n');
+        terminal.write('  addTodo <task>      Add a new todo\r\n');
+        terminal.write('  listTodo            List all todos\r\n');
+        terminal.write('  completeTodo <id>   Toggle completion status\r\n');
+        terminal.write('  deleteTodo <id>     Remove a todo\r\n');
         
         if (isAdmin) {
           terminal.write('\r\nAdmin commands:\r\n');
@@ -292,6 +523,7 @@ const Terminal = () => {
           terminal.write('  decrypt [file]     Decrypt secure files\r\n');
           terminal.write('  network            Network diagnostic tools\r\n');
           terminal.write('  override           Override security protocols\r\n');
+          terminal.write('  todoAdmin          Advanced todo management\r\n');
         }
         
         terminal.write('\r\n~/neo-portfolio $ ');
@@ -555,8 +787,8 @@ const Terminal = () => {
 
   // Get available commands based on admin status
   const getAvailableCommands = () => {
-    const baseCommands = ['help', 'about', 'skills', 'projects', 'contact', 'clear', 'exit', 'matrix', 'hack', 'game', 'accent', 'sudo'];
-    return isAdmin ? [...baseCommands, 'system', 'decrypt', 'network', 'override'] : baseCommands;
+    const baseCommands = ['help', 'about', 'skills', 'projects', 'contact', 'clear', 'exit', 'matrix', 'hack', 'game', 'accent', 'sudo', 'todo', 'addTodo', 'listTodo', 'completeTodo', 'deleteTodo'];
+    return isAdmin ? [...baseCommands, 'system', 'decrypt', 'network', 'override', 'todoAdmin'] : baseCommands;
   };
 
   return (
@@ -568,7 +800,7 @@ const Terminal = () => {
         <div className="mt-4">
           <form onSubmit={handleSubmit} className="flex">
             <span className={`hidden md:inline-block text-${getThemeColor(accentColor)} mr-2`}>
-              {isPasswordPrompt ? 'Password: ' : '~/neo-portfolio $'}
+              {isPasswordPrompt ? 'Password: ' : '~/neo-portfolio }
             </span>
             <input
               ref={inputRef}
@@ -600,7 +832,7 @@ const Terminal = () => {
                   if (inputRef.current) inputRef.current.focus();
                 }}
                 className={`px-3 py-1 text-sm border ${
-                  ['system', 'decrypt', 'network', 'override'].includes(cmd) 
+                  ['system', 'decrypt', 'network', 'override', 'todoAdmin'].includes(cmd) 
                     ? `border-${getThemeColor(accentColor)} text-${getThemeColor(accentColor)}` 
                     : 'border-gray-700'
                 } rounded hover:border-gray-500`}
