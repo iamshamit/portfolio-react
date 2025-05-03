@@ -6,6 +6,8 @@ import Projects from './Components/Projects';
 import Contact from './Components/Contact';
 import Footer from './Components/Footer';
 import Terminal from './Components/Terminal';
+import ScrollToTop from './Components/ScrollToTop';
+import ScrollToTopButton from './Components/ScrollToTopButton';
 
 export const ThemeContext = createContext();
 
@@ -36,6 +38,8 @@ const App = () => {
     <ThemeContext.Provider value={{ accentColor, setAccentColor, accentColors, isTerminalOpen, setIsTerminalOpen }}>
       <div className="relative min-h-screen bg-[#0D0D0D] text-white font-sans overflow-x-hidden">
         <div className="scanlines"></div>
+        <ScrollToTop />
+        <ScrollToTopButton />
         {isTerminalOpen ? (
           <Terminal />
         ) : (
