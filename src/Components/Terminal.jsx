@@ -800,7 +800,7 @@ const Terminal = () => {
         <div className="mt-4">
           <form onSubmit={handleSubmit} className="flex">
             <span className={`hidden md:inline-block text-${getThemeColor(accentColor)} mr-2`}>
-              {isPasswordPrompt ? 'Password: ' : '~/neo-portfolio }
+              {isPasswordPrompt ? 'Password: ' : '~/neo-portfolio' }
             </span>
             <input
               ref={inputRef}
