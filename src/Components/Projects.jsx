@@ -24,7 +24,7 @@ const Projects = () => {
       title: "Friends",
       description:
         "A simple application built with Python (Flask) and JavaScript (React) for managing friend relationships.",
-      image: "/api/placeholder/600/400",
+      image: "https://files.catbox.moe/9x4ywa.png",
       category: "fullstack",
       stack: ["Python", "Flask", "JavaScript", "React", "MongoDB"],
       demoLink: null,
