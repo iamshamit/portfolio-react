@@ -9,76 +9,68 @@ const Projects = () => {
   const projects = [
     {
       id: 1,
-      title: "NeoChat",
+      title: "TodoListX",
       description:
-        "End-to-end encrypted messaging application with cyberpunk-inspired UI",
-      image: "/api/placeholder/600/400",
+        "A straightforward and efficient todo list web application built using React and React Router. It provides users with a simple yet effective solution for managing their tasks without the need for login or complex features.",
+      image: "https://files.catbox.moe/211cwq.png",
       category: "frontend",
-      stack: ["React", "Firebase", "TailwindCSS"],
-      demoLink: "https://neochat.example.com",
-      codeLink: "https://github.com/johndoe/neochat",
-      featured: true,
+      stack: ["React", "React Router", "Local Storage"],
+      demoLink: "https://iamshamit.github.io/todo-list/",
+      codeLink: "https://github.com/iamshamit/todo-list",
+      featured: false,
     },
     {
       id: 2,
-      title: "CyberShop",
+      title: "Friends",
       description:
-        "Full-stack e-commerce platform for digital products with secure payment integration",
-      image: "/api/placeholder/600/400",
+        "A social networking application featuring user authentication, friend requests, and a real-time messaging system. Built with Python (Flask) for the backend and JavaScript (React) for the frontend.",
+      image: "https://files.catbox.moe/9x4ywa.png",
       category: "fullstack",
-      stack: ["React", "Node.js", "MongoDB", "Stripe"],
-      demoLink: "https://cybershop.example.com",
-      codeLink: "https://github.com/johndoe/cybershop",
-      featured: true,
+      stack: ["Python", "Flask", "JavaScript", "React", "Socket.IO", "MongoDB"],
+      demoLink: null,
+      codeLink: "https://github.com/iamshamit/Friends",
+      featured: false,
     },
     {
       id: 3,
-      title: "Network Monitor",
+      title: "Gigplatform",
       description:
-        "Real-time network monitoring dashboard for system administrators",
-      image: "/api/placeholder/600/400",
-      category: "backend",
-      stack: ["Python", "Flask", "D3.js", "WebSockets"],
-      demoLink: "https://netmonitor.example.com",
-      codeLink: "https://github.com/johndoe/network-monitor",
-      featured: false,
-    },
-    {
-      id: 4,
-      title: "AI Code Assistant",
-      description: "AI-powered code completion and refactoring tool",
-      image: "/api/placeholder/600/400",
-      category: "ai",
-      stack: ["Python", "TensorFlow", "React", "Express"],
-      demoLink: "https://ai-code.example.com",
-      codeLink: "https://github.com/johndoe/ai-code-assistant",
+        "A full-stack freelancing platform connecting employers with skilled freelancers. Features include job posting, real-time messaging, and payment tracking.",
+      image: "https://files.catbox.moe/o3hgvt.png",
+      category: "fullstack",
+      stack: [
+        "React",
+        "Vite",
+        "React Router",
+        "React Query",
+        "Socket.IO Client",
+        "Tailwind CSS",
+        "Bootstrap",
+        "Node.js",
+        "Express",
+        "MongoDB (Atlas)",
+        "Mongoose",
+        "JWT Authentication",
+        "Bcrypt Password Hashing",
+      ],
+      demoLink: "https://gigplatform.vercel.app/",
+      codeLink: "https://github.com/iamshamit/Gigplatform",
       featured: true,
     },
     {
-      id: 5,
-      title: "Weather Data Visualizer",
+      id: 4,
+      title: "portfolio-react",
       description:
-        "Interactive weather data visualization with historical comparisons",
-      image: "/api/placeholder/600/400",
+        "A personal portfolio website built with React, showcasing skills, experience, and projects. Features a responsive design and contact form.",
+      image: "https://files.catbox.moe/bdo0mo.png",
       category: "frontend",
-      stack: ["Vue.js", "D3.js", "Weather API"],
-      demoLink: "https://weather-viz.example.com",
-      codeLink: "https://github.com/johndoe/weather-viz",
-      featured: false,
-    },
-    {
-      id: 6,
-      title: "Task Management API",
-      description:
-        "RESTful API for task management with advanced filtering and sorting",
-      image: "/api/placeholder/600/400",
-      category: "backend",
-      stack: ["Node.js", "Express", "MongoDB", "Jest"],
-      demoLink: "https://task-api.example.com/docs",
-      codeLink: "https://github.com/johndoe/task-api",
-      featured: false,
-    },
+      stack: ["React", "CSS", "Vite"],
+      demoLink: "https://shamit.is-a.dev",
+      codeLink: "https://github.com/iamshamit/portfolio-react",
+      featured: true,
+    },  
   ];
+  
 
   const filteredProjects =
     activeFilter === "all"
@@ -150,7 +142,7 @@ const Projects = () => {
             className="flex flex-wrap gap-4 mb-12 justify-center md:justify-start"
             variants={itemVariants}
           >
-            {["all", "featured", "frontend", "backend", "fullstack", "ai"].map(
+            {["all", "featured", "frontend", "backend", "fullstack"].map(
               (filter) => (
                 <motion.button
                   key={filter}
