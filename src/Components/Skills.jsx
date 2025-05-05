@@ -8,28 +8,20 @@ const Skills = () => {
 
   const skillsData = {
     frontend: [
-      { name: 'React', level: 90 },
-      { name: 'JavaScript', level: 85 },
+      { name: 'React', level: 70 },
+      { name: 'JavaScript', level: 75 },
       { name: 'HTML/CSS', level: 90 },
       { name: 'Tailwind CSS', level: 80 },
-      { name: 'TypeScript', level: 75 },
-      { name: 'Vue.js', level: 65 },
     ],
     backend: [
       { name: 'Node.js', level: 85 },
       { name: 'Python', level: 75 },
       { name: 'Express', level: 80 },
       { name: 'MongoDB', level: 75 },
-      { name: 'SQL', level: 70 },
-      { name: 'GraphQL', level: 65 },
     ],
     tools: [
       { name: 'Git', level: 85 },
       { name: 'Docker', level: 70 },
-      { name: 'AWS', level: 65 },
-      { name: 'CI/CD', level: 70 },
-      { name: 'Figma', level: 75 },
-      { name: 'Jest', level: 70 },
     ],
   };
 
