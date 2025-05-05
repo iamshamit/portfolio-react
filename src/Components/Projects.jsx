@@ -23,10 +23,10 @@ const Projects = () => {
       id: 2,
       title: "Friends",
       description:
-        "A social networking application featuring user authentication, friend requests, and a real-time messaging system. Built with Python (Flask) for the backend and JavaScript (React) for the frontend.",
-      image: "https://files.catbox.moe/9x4ywa.png",
+        "A simple application built with Python (Flask) and JavaScript (React) for managing friend relationships.",
+      image: "/api/placeholder/600/400",
       category: "fullstack",
-      stack: ["Python", "Flask", "JavaScript", "React", "Socket.IO", "MongoDB"],
+      stack: ["Python", "Flask", "JavaScript", "React", "MongoDB"],
       demoLink: null,
       codeLink: "https://github.com/iamshamit/Friends",
       featured: false,

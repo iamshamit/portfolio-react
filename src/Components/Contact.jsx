@@ -102,9 +102,8 @@ const Contact = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <motion.div variants={itemVariants}>
-              <h3 className="text-2xl font-medium mb-6">Get In Touch</h3>
               <p className="text-gray-300 mb-8">
-                Have a project in mind or want to collaborate? Feel free to reach out. I'm always open to discussing new opportunities and ideas.
+                Have a project in mind or want to collaborate? Feel free to reach out. I&apos;m always open to discussing new opportunities and ideas.
               </p>
               
               <div className="space-y-4 mb-8">
