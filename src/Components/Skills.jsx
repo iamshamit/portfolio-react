@@ -11,7 +11,10 @@ const Skills = () => {
       { name: 'React', level: 70 },
       { name: 'JavaScript', level: 75 },
       { name: 'HTML/CSS', level: 90 },
+      { name: 'Bootstrap', level: 90 },
+
       { name: 'Tailwind CSS', level: 80 },
+      { name: 'Vite', level: 80 },
     ],
     backend: [
       { name: 'Node.js', level: 85 },
@@ -123,7 +126,7 @@ const Skills = () => {
             variants={itemVariants}
           >
             {/* Tech logos icons */}
-            {['React', 'Node.js', 'MongoDB', 'Python', 'Docker', 'AWS'].map((tech) => (
+            {['React', 'Node.js', 'MongoDB', 'Python', 'Docker'].map((tech) => (
               <motion.div
                 key={tech}
                 className="flex flex-col items-center justify-center p-4 bg-black/50 backdrop-blur-sm rounded-lg border border-gray-800 hover:border-gray-600 transition-colors"
