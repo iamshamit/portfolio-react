@@ -7,7 +7,7 @@ const Starfield = () => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const stars = [];
-    const numStars = 400;
+    const numStars = 500;
 
     const resizeCanvas = () => {
       canvas.width = window.innerWidth;

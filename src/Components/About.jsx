@@ -24,9 +24,9 @@ const About = () => {
   const codeSnippet = `const developer = {
   name: "Shamit Mishra",
   type: "Full-Stack Developer",
-  location: "Neo Tokyo",
-  skills: ["React", "Node.js", "Python"],
-  passion: "Building cyberpunk-inspired UIs"
+  location: "Odisha, India",
+  skills: ["React", "Python", "Java"],
+  passion: "Learning new technologies"
 };`;
 
   return (
@@ -53,13 +53,13 @@ const About = () => {
             <motion.div variants={itemVariants}>
               <div className="space-y-4 text-gray-300">
                 <p className="text-lg">
-                  I&apos;m a <span className={accentColors[accentColor]}>full-stack developer</span> with a passion for creating immersive digital experiences. With 5+ years of experience in web development, I specialize in building scalable applications with modern frameworks and technologies.
+                  I&apos;m a <span className={accentColors[accentColor]}>full-stack developer</span> and student with a passion for building innovative digital solutions. Currently balancing my academic studies with self-taught programming, I&apos;m constantly expanding my technical toolkit.
                 </p>
                 <p>
-                  My approach combines technical expertise with creative problem-solving to deliver solutions that not only meet functional requirements but also provide engaging user experiences.
+                  My approach combines fresh perspectives with a strong foundation in modern frameworks. I&apos;m driven by curiosity and the excitement of solving complex problems through elegant code.
                 </p>
                 <p>
-                  When I&apos;m not coding, you can find me exploring the latest in AI technology, contributing to open-source projects, or designing retro-futuristic interfaces.
+                  When I&apos;m not coding or studying, you can find me exploring the latest tech trends, experimenting with new programming languages, or collaborating on interesting projects with fellow developers.
                 </p>
               </div>
               
@@ -108,20 +108,20 @@ const About = () => {
                 className="grid grid-cols-2 gap-6 mt-8"
               >
                 <div className="bg-black/30 backdrop-blur-sm p-4 rounded-lg border border-gray-800">
-                  <div className={`text-xl ${accentColors[accentColor]}`}>5+</div>
-                  <div className="text-gray-400 text-sm">Years Experience</div>
+                  <div className={`text-xl ${accentColors[accentColor]}`}>4</div>
+                  <div className="text-gray-400 text-sm">Programming Languages</div>
                 </div>
                 <div className="bg-black/30 backdrop-blur-sm p-4 rounded-lg border border-gray-800">
-                  <div className={`text-xl ${accentColors[accentColor]}`}>20+</div>
-                  <div className="text-gray-400 text-sm">Projects Completed</div>
-                </div>
-                <div className="bg-black/30 backdrop-blur-sm p-4 rounded-lg border border-gray-800">
-                  <div className={`text-xl ${accentColors[accentColor]}`}>10+</div>
-                  <div className="text-gray-400 text-sm">Happy Clients</div>
+                  <div className={`text-xl ${accentColors[accentColor]}`}>3+</div>
+                  <div className="text-gray-400 text-sm">Personal Projects</div>
                 </div>
                 <div className="bg-black/30 backdrop-blur-sm p-4 rounded-lg border border-gray-800">
                   <div className={`text-xl ${accentColors[accentColor]}`}>3</div>
-                  <div className="text-gray-400 text-sm">Open Source Contributions</div>
+                  <div className="text-gray-400 text-sm">Years Self-Learning</div>
+                </div>
+                <div className="bg-black/30 backdrop-blur-sm p-4 rounded-lg border border-gray-800">
+                  <div className={`text-xl ${accentColors[accentColor]}`}>∞</div>
+                  <div className="text-gray-400 text-sm">Curiosity Level</div>
                 </div>
               </motion.div>
             </motion.div>

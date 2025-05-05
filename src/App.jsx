@@ -12,7 +12,7 @@ import ScrollToTopButton from './Components/ScrollToTopButton';
 export const ThemeContext = createContext();
 
 const App = () => {
-  const [accentColor, setAccentColor] = useState('neon-green');
+  const [accentColor, setAccentColor] = useState('neon-purple');
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
 
   const accentColors = {
