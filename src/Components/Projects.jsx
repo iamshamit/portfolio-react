@@ -171,7 +171,7 @@ const Projects = () => {
             {filteredProjects.map((project) => (
               <motion.div
                 key={project.id}
-                className="bg-black/40 backdrop-blur-sm rounded-lg overflow-hidden border border-gray-800 hover:border-gray-600 transition-colors"
+                className="bg-black/40 backdrop-blur-sm rounded-lg overflow-hidden border border-gray-800 hover:border-gray-600 transition-colors flex flex-col"
                 variants={cardVariants}
                 whileHover="hover"
               >
@@ -197,37 +197,45 @@ const Projects = () => {
                   </div>
                 </div>
 
-                {/* Project info */}
-                <div className="p-6">
-                  <h3
-                    className={`text-xl font-bold mb-2 ${accentColors[accentColor]}`}
-                  >
-                    {project.title}
-                  </h3>
-                  <p className="text-gray-300 mb-4">{project.description}</p>
+                {/* Project info - Using flex-grow to push buttons to bottom */}
+                <div className="p-6 flex flex-col flex-grow">
+                  <div className="flex-grow">
+                    <h3
+                      className={`text-xl font-bold mb-2 ${accentColors[accentColor]}`}
+                    >
+                      {project.title}
+                    </h3>
+                    <p className="text-gray-300 mb-4">{project.description}</p>
 
-                  {/* Tech stack */}
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    {project.stack.map((tech) => (
-                      <span
-                        key={tech}
-                        className="text-xs px-2 py-1 bg-gray-800 rounded-md text-gray-300"
-                      >
-                        {tech}
-                      </span>
-                    ))}
+                    {/* Tech stack */}
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      {project.stack.map((tech) => (
+                        <span
+                          key={tech}
+                          className="text-xs px-2 py-1 bg-gray-800 rounded-md text-gray-300"
+                        >
+                          {tech}
+                        </span>
+                      ))}
+                    </div>
                   </div>
 
-                  {/* Links */}
-                  <div className="flex gap-4">
-                    <a
-                      href={project.demoLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`px-4 py-2 border ${accentColors[accentColor]} rounded hover:shadow-glow transition-shadow text-sm`}
-                    >
-                      Live Demo
-                    </a>
+                  {/* Links - Now these will stay at the bottom */}
+                  <div className="flex gap-4 mt-auto pt-4">
+                    {project.demoLink ? (
+                      <a
+                        href={project.demoLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`px-4 py-2 border ${accentColors[accentColor]} rounded hover:shadow-glow transition-shadow text-sm`}
+                      >
+                        Live Demo
+                      </a>
+                    ) : (
+                      <span className="px-4 py-2 border border-gray-700 text-gray-500 rounded text-sm opacity-60">
+                        No Demo
+                      </span>
+                    )}
                     <a
                       href={project.codeLink}
                       target="_blank"
