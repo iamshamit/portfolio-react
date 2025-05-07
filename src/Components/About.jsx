@@ -76,7 +76,7 @@ const About = () => {
                   View Projects
                 </motion.a>
                 <motion.a 
-                  href="/resume.pdf"
+                  href="https://drive.google.com/file/d/1ybrVKj01x9G3aZBIjdrPAEZtHY5Rd4FV/view?usp=sharing"
                   className="px-6 py-2 border border-gray-700 rounded hover:border-white transition-colors"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.98 }}
