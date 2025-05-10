@@ -16,8 +16,8 @@ const VisitorTracker = ({ apiKey }) => {
       return utmParams;
     };
 
-    // Function to track visitor
-    const trackVisit = async () => {
+    // Function to track visitor with image pixel fallback
+    const trackVisit = () => {
       try {
         const utmParams = getUtmParams();
         
@@ -31,39 +31,78 @@ const VisitorTracker = ({ apiKey }) => {
         if (document.referrer) {
           queryParams.append('referrer', document.referrer);
         }
+
+        // First try with fetch API
+        const trackWithFetch = async () => {
+          try {
+            const trackingUrl = `https://tracking-go-api.onrender.com/track?${queryParams.toString()}`;
+            
+            // Attempt with fetch first
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+            
+            const response = await fetch(trackingUrl, {
+              method: 'GET',
+              mode: 'cors',
+              credentials: 'omit',
+              headers: {
+                'X-API-Key': apiKey || '',
+                'Accept': 'application/json'
+              },
+              signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+              console.warn('Tracking returned non-OK response:', response.status);
+              fallbackToImagePixel();
+            }
+          } catch (error) {
+            console.warn('Fetch tracking failed, using fallback:', error.name);
+            fallbackToImagePixel();
+          }
+        };
         
-        // Create the request URL
-        const trackingUrl = `https://tracking-go-api.onrender.com/track?${queryParams.toString()}`;
+        // Fallback method using image pixel technique (bypasses CORS)
+        const fallbackToImagePixel = () => {
+          try {
+            const img = new Image();
+            const pixelUrl = `https://tracking-go-api.onrender.com/track?${queryParams.toString()}&fallback=true`;
+            
+            img.src = pixelUrl;
+            img.style.display = 'none';
+            img.onload = () => {
+              console.log('Tracking pixel loaded successfully');
+              setTimeout(() => {
+                document.body.removeChild(img);
+              }, 5000);
+            };
+            img.onerror = () => {
+              console.warn('Tracking pixel failed to load');
+              document.body.removeChild(img);
+            };
+            
+            document.body.appendChild(img);
+          } catch (imgError) {
+            console.warn('Image pixel tracking failed:', imgError);
+            // Silent failure - don't impact user experience
+          }
+        };
         
-        // Make the tracking API request with more options for CORS
-        const response = await fetch(trackingUrl, {
-          method: 'GET',
-          mode: 'cors', // Explicitly state we want CORS
-          headers: {
-            'X-API-Key': apiKey || '',
-            'Content-Type': 'application/json'
-          },
-          // Increased timeout to handle slow server startup on render.com free tier
-          signal: AbortSignal.timeout(10000)
-        });
+        // Start with fetch method
+        trackWithFetch();
         
-        if (!response.ok) {
-          console.warn('Visitor tracking response not OK:', await response.text());
-        }
       } catch (error) {
-        // Silent fail - don't disrupt user experience if tracking fails
-        // Only log to console if not a network error (might be CORS or server offline)
-        if (!(error instanceof TypeError)) {
-          console.error('Error tracking visitor:', error);
-        }
+        // Silent failure - don't disrupt user experience
+        console.warn('Visitor tracking error:', error);
       }
     };
 
-    // Add a small delay before tracking to ensure page has fully loaded
-    // This helps with Render.com's cold starts
+    // Add delay to handle cold starts
     const trackingTimeout = setTimeout(() => {
       trackVisit();
-    }, 1000);
+    }, 1500);
     
     return () => clearTimeout(trackingTimeout);
   }, []); // Empty dependency array ensures this runs once on mount
