@@ -51,17 +51,20 @@ const VisitorTracker = ({ apiKey }) => {
       parser.setUA(navigator.userAgent);
       const os = parser.getOS();
       const browser = parser.getBrowser();
-      const device = parser.getDevice(); // Get device information
+      const device = parser.getDevice();
+
+      // Add fallback for device type
+      const deviceType = device.type || (navigator.userAgent.includes('Mobi') ? 'mobile' : 'desktop');
 
       const source = urlParams.get('source') || 'website';
-      queryParams.append('source', source); // Add source to queryParams
+      queryParams.append('source', source);
 
       const requestBody = JSON.stringify({
         userAgent: navigator.userAgent,
         referer: document.referrer,
         operatingSystem: `${os.name} ${os.version}`,
         browserVersion: `${browser.name} ${browser.version}`,
-        deviceType: device.type || 'unknown', // Add device type
+        deviceType,
         ipAddress: ip
       });
 
