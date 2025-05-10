@@ -19,7 +19,7 @@ const VisitorTracker = ({ apiKey }) => {
     };
 
     // Function to track visitor with image pixel fallback
-    const trackVisit = () => {
+    const trackVisit = async () => {
       try {
         const utmParams = getUtmParams();
 
@@ -47,14 +47,31 @@ const VisitorTracker = ({ apiKey }) => {
         const browserVersion = browser.name + " " + browser.version;
         const deviceType = device.type || "desktop"; // Default to desktop if type is not available
 
+        // Function to get the client's IP address
+        const getIp = async () => {
+          try {
+            const response = await fetch('https://api.ipify.org?format=json');
+            const data = await response.json();
+            return data.ip;
+          } catch (error) {
+            console.error('Error getting IP address:', error);
+            return '';
+          }
+        };
+
         // Construct request body
-        const requestBody = JSON.stringify({
-          userAgent,
-          referer,
-          operatingSystem,
-          browserVersion,
-          deviceType,
-        });
+        const constructRequestBody = async () => {
+          const ipAddress = await getIp();
+
+          return JSON.stringify({
+            userAgent,
+            referer,
+            operatingSystem,
+            browserVersion,
+            deviceType,
+            ipAddress, // Include IP address in the request body
+          });
+        };
 
         let source = "website";
         if (queryParams.has('utm_source')) {
@@ -67,7 +84,8 @@ const VisitorTracker = ({ apiKey }) => {
         // First try with fetch API
         const trackWithFetch = async () => {
           try {
-            const trackingUrl = `https://trackapi-3xr4.onrender.com/track?source=${source}&${queryParams.toString()}`;
+            const requestBody = await constructRequestBody();
+            const trackingUrl = `https://tracking-go-api.onrender.com/track?source=${source}&${queryParams.toString()}`;
 
             // Attempt with fetch first
             const controller = new AbortController();
@@ -125,7 +143,7 @@ const VisitorTracker = ({ apiKey }) => {
         };
 
         // Start with fetch method
-        trackWithFetch();
+        await trackWithFetch();
 
       } catch (error) {
         // Silent failure - don't disrupt user experience
