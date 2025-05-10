@@ -32,38 +32,49 @@ const VisitorTracker = ({ apiKey }) => {
           queryParams.append('referrer', document.referrer);
         }
         
-        // Add API key as query parameter (alternative to header)
-        queryParams.append('api_key', apiKey);
-        
-        // Create the request URL with API key included in query
+        // Create the request URL
         const trackingUrl = `https://tracking-go-api.onrender.com/track?${queryParams.toString()}`;
         
-        // Use a fallback approach to CORS issues - IMG tag method
-        // This avoids preflight requests entirely but only works for GET requests
+        // Use a fallback approach to CORS issues - IMG tag method with API key in header
         const img = new Image();
-        img.src = trackingUrl;
-        img.style.display = 'none';
-        img.onerror = () => {
-          // This will often trigger but the request still goes through
-          console.log("Tracking request sent");
+        // Add API key as a custom attribute (not in URL)
+        img.setAttribute('data-api-key', apiKey);
+        img.onload = () => {
+          console.log("Tracking image loaded successfully");
         };
-        document.body.appendChild(img);
-        setTimeout(() => document.body.removeChild(img), 5000);
+        img.onerror = () => {
+          // This will often trigger but the request may still go through
+          console.log("Tracking request sent");
+          
+          // Make a proper authenticated request as backup
+          setTimeout(async () => {
+            try {
+              const headers = new Headers();
+              headers.append('X-API-Key', apiKey);
+              
+              await fetch(trackingUrl, {
+                method: 'GET',
+                headers: headers,
+                mode: 'no-cors',
+                cache: 'no-cache',
+                credentials: 'omit',
+              });
+              console.log("Fetch tracking attempt completed");
+            } catch (err) {
+              // Ignore errors - the image method is our primary method
+            }
+          }, 500);
+        };
         
-        // Fallback method if you still want to try fetch
-        setTimeout(async () => {
-          try {
-            const response = await fetch(trackingUrl, {
-              method: 'GET',
-              mode: 'no-cors', // Important - this will make the request succeed but response will be opaque
-              cache: 'no-cache',
-              credentials: 'omit',
-            });
-            console.log("Fetch tracking attempt completed");
-          } catch (err) {
-            // Ignore errors - the image method above is our primary method
+        // Set the src to trigger the request - add timestamp to prevent caching
+        img.src = `${trackingUrl}&_t=${Date.now()}`;
+        img.style.display = 'none';
+        document.body.appendChild(img);
+        setTimeout(() => {
+          if (img.parentNode) {
+            document.body.removeChild(img);
           }
-        }, 500);
+        }, 5000);
         
       } catch (error) {
         // Silent fail - don't disrupt user experience if tracking fails
