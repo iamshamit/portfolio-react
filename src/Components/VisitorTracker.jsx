@@ -46,7 +46,6 @@ const VisitorTracker = ({ apiKey }) => {
       if (document.referrer) queryParams.append('referrer', document.referrer);
 
       const ip = await getIpAddress();
-      if (ip) queryParams.append('ipAddress', ip);
 
       const parser = new UAParser.UAParser();
       parser.setUA(navigator.userAgent);
