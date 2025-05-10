@@ -10,6 +10,8 @@ import ScrollToTop from './Components/ScrollToTop';
 import ScrollToTopButton from './Components/ScrollToTopButton';
 import VisitorTracker from './Components/VisitorTracker';
 
+// In your component:
+
 export const ThemeContext = createContext();
 
 const App = () => {
