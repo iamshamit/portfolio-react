@@ -40,7 +40,7 @@ const App = () => {
     <ThemeContext.Provider value={{ accentColor, setAccentColor, accentColors, isTerminalOpen, setIsTerminalOpen }}>
       <div className="relative min-h-screen bg-[#0D0D0D] text-white font-sans overflow-x-hidden">
         {/* Visitor tracking component */}
-        <VisitorTracker apiKey={"d7f95e1f-bc78-4b3c-932a-e8e328ce3ed0"} />
+        <VisitorTracker apiKey={apiKey} />
         
         <div className="scanlines"></div>
         <ScrollToTop />
