@@ -35,59 +35,28 @@ const VisitorTracker = ({ apiKey }) => {
         // Create the request URL
         const trackingUrl = `https://tracking-go-api.onrender.com/track?${queryParams.toString()}`;
         
-        // Use a fallback approach to CORS issues - IMG tag method with API key in header
-        const img = new Image();
-        // Add API key as a custom attribute (not in URL)
-        img.setAttribute('data-api-key', apiKey);
-        img.onload = () => {
-          console.log("Tracking image loaded successfully");
-        };
-        img.onerror = () => {
-          // This will often trigger but the request may still go through
-          console.log("Tracking request sent");
-          
-          // Make a proper authenticated request as backup
-          setTimeout(async () => {
-            try {
-              const headers = new Headers();
-              headers.append('X-API-Key', apiKey);
-              
-              await fetch(trackingUrl, {
-                method: 'GET',
-                headers: headers,
-                mode: 'no-cors',
-                cache: 'no-cache',
-                credentials: 'omit',
-              });
-              console.log("Fetch tracking attempt completed");
-            } catch (err) {
-              // Ignore errors - the image method is our primary method
-            }
-          }, 500);
-        };
+        // Make the tracking API request
+        const response = await fetch(trackingUrl, {
+          method: 'GET',
+          headers: {
+            'X-API-Key': apiKey,
+          },
+        });
         
-        // Set the src to trigger the request - add timestamp to prevent caching
-        img.src = `${trackingUrl}&_t=${Date.now()}`;
-        img.style.display = 'none';
-        document.body.appendChild(img);
-        setTimeout(() => {
-          if (img.parentNode) {
-            document.body.removeChild(img);
-          }
-        }, 5000);
-        
+        if (!response.ok) {
+          console.error('Visitor tracking failed:', await response.text());
+        }
       } catch (error) {
         // Silent fail - don't disrupt user experience if tracking fails
-        console.error('Error setting up tracking:', error);
+        console.error('Error tracking visitor:', error);
       }
     };
 
     // Track the visit when component mounts
-    if (apiKey) {
-      trackVisit();
-    }
+    trackVisit();
     
-  }, [apiKey]); // Include apiKey in dependencies
+    // No cleanup needed
+  }, []); // Empty dependency array ensures this runs once on mount
 
   // This component doesn't render anything
   return null;
