@@ -16,6 +16,8 @@ const VisitorTracker = ({ apiKey }) => {
       return utmParams;
     };
 
+    const urlParams = new URLSearchParams(window.location.search);
+
     const getIpAddress = async () => {
       try {
         const response = await fetch('https://api.ipify.org?format=json');
@@ -44,12 +46,15 @@ const VisitorTracker = ({ apiKey }) => {
       if (document.referrer) queryParams.append('referrer', document.referrer);
 
       const ip = await getIpAddress();
-      if (ip) queryParams.append('ipAddress', ip); // Add IP to query params
+      if (ip) queryParams.append('ipAddress', ip);
 
       const parser = new UAParser.UAParser();
       parser.setUA(navigator.userAgent);
       const os = parser.getOS();
       const browser = parser.getBrowser();
+
+      const source = urlParams.get('source') || 'website';
+      queryParams.append('source', source); // Add source to queryParams
 
       const requestBody = JSON.stringify({
         userAgent: navigator.userAgent,
@@ -59,7 +64,7 @@ const VisitorTracker = ({ apiKey }) => {
         ipAddress: ip
       });
 
-      const trackingUrl = `https://trackapi-3xr4.onrender.com/track?source=website&${queryParams.toString()}`;
+      const trackingUrl = `https://trackapi-3xr4.onrender.com/track?${queryParams.toString()}`;
 
       try {
         const controller = new AbortController();
@@ -93,7 +98,7 @@ const VisitorTracker = ({ apiKey }) => {
     return () => clearTimeout(timeoutId);
   }, [apiKey]);
 
-  return null; // No UI component to render
+  return null;
 };
 
 VisitorTracker.propTypes = {
