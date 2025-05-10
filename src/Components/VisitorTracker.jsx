@@ -44,6 +44,7 @@ const VisitorTracker = ({ apiKey }) => {
       if (document.referrer) queryParams.append('referrer', document.referrer);
 
       const ip = await getIpAddress();
+      if (ip) queryParams.append('ipAddress', ip); // Add IP to query params
 
       const parser = new UAParser.UAParser();
       parser.setUA(navigator.userAgent);
@@ -58,7 +59,7 @@ const VisitorTracker = ({ apiKey }) => {
         ipAddress: ip
       });
 
-      const trackingUrl = `http://localhost:3000/track?source=website&${queryParams.toString()}`;
+      const trackingUrl = `https://trackapi-3xr4.onrender.com/track?source=website&${queryParams.toString()}`;
 
       try {
         const controller = new AbortController();
