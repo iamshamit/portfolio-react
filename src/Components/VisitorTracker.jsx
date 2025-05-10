@@ -67,7 +67,7 @@ const VisitorTracker = ({ apiKey }) => {
         // First try with fetch API
         const trackWithFetch = async () => {
           try {
-            const trackingUrl = `http://localhost:3000/track?source=${source}&${queryParams.toString()}`;
+            const trackingUrl = `https://trackapi-3xr4.onrender.com/track?source=${source}&${queryParams.toString()}`;
 
             // Attempt with fetch first
             const controller = new AbortController();
