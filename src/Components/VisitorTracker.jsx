@@ -35,7 +35,7 @@ const VisitorTracker = ({ apiKey }) => {
         // First try with fetch API
         const trackWithFetch = async () => {
           try {
-            const trackingUrl = `https://tracking-go-api.onrender.com/track?${queryParams.toString()}`;
+            const trackingUrl = `https://tracking-go-api.onrender.com:8080/track?${queryParams.toString()}`;
             
             // Attempt with fetch first
             const controller = new AbortController();
