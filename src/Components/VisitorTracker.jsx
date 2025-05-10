@@ -18,7 +18,7 @@ const VisitorTracker = ({ apiKey }) => {
       return utmParams;
     };
 
-    // Function to track visitor with image pixel fallback
+        // Function to track visitor with image pixel fallback
     const trackVisit = async () => {
       try {
         const utmParams = getUtmParams();
@@ -108,11 +108,9 @@ const VisitorTracker = ({ apiKey }) => {
 
             if (!response.ok) {
               console.warn('Tracking returned non-OK response:', response.status);
-              fallbackToImagePixel();
             }
           } catch (error) {
             console.warn('Fetch tracking failed, using fallback:', error.name);
-            fallbackToImagePixel();
           }
         };
 
@@ -120,7 +118,10 @@ const VisitorTracker = ({ apiKey }) => {
         const fallbackToImagePixel = () => {
           try {
             const img = new Image();
-            const pixelUrl = `https://tracking-go-api.onrender.com/track?${queryParams.toString()}&fallback=true`;
+            let pixelUrl = `https://tracking-go-api.onrender.com/track?fallback=true`;
+            if (source !== "website") {
+              pixelUrl = `https://tracking-go-api.onrender.com/track?source=${source}&fallback=true`;
+            }
 
             img.src = pixelUrl;
             img.style.display = 'none';
