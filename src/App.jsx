@@ -8,12 +8,14 @@ import Footer from './Components/Footer';
 import Terminal from './Components/Terminal';
 import ScrollToTop from './Components/ScrollToTop';
 import ScrollToTopButton from './Components/ScrollToTopButton';
+import VisitorTracker from './Components/VisitorTracker';
 
 export const ThemeContext = createContext();
 
 const App = () => {
   const [accentColor, setAccentColor] = useState('neon-purple');
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
+  const [apiKey, setApiKey] = useState(import.meta.env.VITE_APP_TRACKING_API_KEY || '');
 
   const accentColors = {
     'neon-blue': 'text-cyan-400 border-cyan-400 shadow-cyan-400',
@@ -37,6 +39,9 @@ const App = () => {
   return (
     <ThemeContext.Provider value={{ accentColor, setAccentColor, accentColors, isTerminalOpen, setIsTerminalOpen }}>
       <div className="relative min-h-screen bg-[#0D0D0D] text-white font-sans overflow-x-hidden">
+        {/* Visitor tracking component */}
+        <VisitorTracker apiKey={apiKey} />
+        
         <div className="scanlines"></div>
         <ScrollToTop />
         <ScrollToTopButton />
