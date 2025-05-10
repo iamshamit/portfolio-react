@@ -35,27 +35,37 @@ const VisitorTracker = ({ apiKey }) => {
         // Create the request URL
         const trackingUrl = `https://tracking-go-api.onrender.com/track?${queryParams.toString()}`;
         
-        // Make the tracking API request
+        // Make the tracking API request with more options for CORS
         const response = await fetch(trackingUrl, {
           method: 'GET',
+          mode: 'cors', // Explicitly state we want CORS
           headers: {
-            'X-API-Key': apiKey,
+            'X-API-Key': apiKey || '',
+            'Content-Type': 'application/json'
           },
+          // Increased timeout to handle slow server startup on render.com free tier
+          signal: AbortSignal.timeout(10000)
         });
         
         if (!response.ok) {
-          console.error('Visitor tracking failed:', await response.text());
+          console.warn('Visitor tracking response not OK:', await response.text());
         }
       } catch (error) {
         // Silent fail - don't disrupt user experience if tracking fails
-        console.error('Error tracking visitor:', error);
+        // Only log to console if not a network error (might be CORS or server offline)
+        if (!(error instanceof TypeError)) {
+          console.error('Error tracking visitor:', error);
+        }
       }
     };
 
-    // Track the visit when component mounts
-    trackVisit();
+    // Add a small delay before tracking to ensure page has fully loaded
+    // This helps with Render.com's cold starts
+    const trackingTimeout = setTimeout(() => {
+      trackVisit();
+    }, 1000);
     
-    // No cleanup needed
+    return () => clearTimeout(trackingTimeout);
   }, []); // Empty dependency array ensures this runs once on mount
 
   // This component doesn't render anything
