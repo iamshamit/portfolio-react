@@ -43,7 +43,6 @@ const VisitorTracker = ({ apiKey }) => {
     const trackVisit = async () => {
       const utmParams = getUtmParams();
       const queryParams = new URLSearchParams(utmParams);
-      if (document.referrer) queryParams.append('referrer', document.referrer);
 
       const ip = await getIpAddress();
 
@@ -61,7 +60,6 @@ const VisitorTracker = ({ apiKey }) => {
 
       const requestBody = JSON.stringify({
         userAgent: navigator.userAgent,
-        referer: document.referrer,
         operatingSystem: `${os.name} ${os.version}`,
         browserVersion: `${browser.name} ${browser.version}`,
         deviceType,
