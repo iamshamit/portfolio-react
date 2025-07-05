@@ -9,30 +9,6 @@ const Projects = () => {
   const projects = [
     {
       id: 1,
-      title: "TodoListX",
-      description:
-        "A straightforward and efficient todo list web application built using React and React Router. It provides users with a simple yet effective solution for managing their tasks without the need for login or complex features.",
-      image: "https://files.catbox.moe/211cwq.png",
-      category: "frontend",
-      stack: ["React", "React Router", "Local Storage"],
-      demoLink: "https://iamshamit.github.io/todo-list/",
-      codeLink: "https://github.com/iamshamit/todo-list",
-      featured: false,
-    },
-    {
-      id: 2,
-      title: "Friends",
-      description:
-        "A simple application built with Python (Flask) and JavaScript (React) for managing friend relationships.",
-      image: "https://files.catbox.moe/9x4ywa.png",
-      category: "fullstack",
-      stack: ["Python", "Flask", "JavaScript", "React", "MongoDB"],
-      demoLink: null,
-      codeLink: "https://github.com/iamshamit/Friends",
-      featured: false,
-    },
-    {
-      id: 3,
       title: "Gigplatform",
       description:
         "A full-stack freelancing platform connecting employers with skilled freelancers. Features include job posting, real-time messaging, and payment tracking.",
@@ -58,7 +34,7 @@ const Projects = () => {
       featured: true,
     },
     {
-      id: 4,
+      id: 2,
       title: "portfolio-react",
       description:
         "A personal portfolio website built with React, showcasing skills, experience, and projects. Features a responsive design and contact form.",
