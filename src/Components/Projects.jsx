@@ -9,28 +9,49 @@ const Projects = () => {
   const projects = [
     {
       id: 1,
-      title: "Gigplatform",
+      title: "Nexara",
       description:
-        "A full-stack freelancing platform connecting employers with skilled freelancers. Features include job posting, real-time messaging, and payment tracking.",
-      image: "https://files.catbox.moe/o3hgvt.png",
+        "A full-stack freelancing platform that connects employers with skilled freelancers. Features include job posting, freelancer dashboards, real-time messaging, secure escrow-based payments, reviews & ratings, and role-based workflows for employers and freelancers.",
+      image: "https://files.catbox.moe/cspja1.png",
+      category: "fullstack",
+      stack: [
+        "React",
+        "Vite",
+        "Tailwind CSS",
+        "Node.js",
+        "Express.js",
+        "MongoDB (Atlas)",
+        "Mongoose",
+        "JWT Authentication",
+        "Role-Based Access Control",
+        "Git & GitHub",
+        "MERN Stack Architecture"
+      ],
+      demoLink: "https://nexara.iamshamit.xyz/",
+      codeLink: "https://github.com/iamshamit/Freelancer",
+      featured: true
+    },
+    {
+      id: 2,
+      title: "SpendWise",
+      description:
+        "A personal finance and expense tracking web application that helps users monitor income, expenses, and spending patterns. Features include category-wise tracking, summaries, and a clean responsive UI.",
+      image: "https://files.catbox.moe/mp5sme.png",
       category: "fullstack",
       stack: [
         "React",
         "Vite",
         "React Router",
-        "React Query",
-        "Socket.IO Client",
+        "Context API",
         "Tailwind CSS",
-        "Bootstrap",
         "Node.js",
         "Express",
         "MongoDB (Atlas)",
         "Mongoose",
         "JWT Authentication",
-        "Bcrypt Password Hashing",
       ],
-      demoLink: "https://gigplatform.vercel.app/",
-      codeLink: "https://github.com/iamshamit/Gigplatform",
+      demoLink: "https://spendwise.iamshamit.xyz/",
+      codeLink: "https://github.com/iamshamit/spendwise",
       featured: true,
     },
     {
@@ -44,16 +65,16 @@ const Projects = () => {
       demoLink: "https://shamit.is-a.dev",
       codeLink: "https://github.com/iamshamit/portfolio-react",
       featured: true,
-    },  
+    },
   ];
-  
+
 
   const filteredProjects =
     activeFilter === "all"
       ? projects
       : activeFilter === "featured"
-      ? projects.filter((project) => project.featured)
-      : projects.filter((project) => project.category === activeFilter);
+        ? projects.filter((project) => project.featured)
+        : projects.filter((project) => project.category === activeFilter);
 
   // Animation variants
   const containerVariants = {
@@ -122,11 +143,10 @@ const Projects = () => {
               (filter) => (
                 <motion.button
                   key={filter}
-                  className={`px-6 py-2 rounded-md border transition-all ${
-                    activeFilter === filter
-                      ? `${accentColors[accentColor]} shadow-glow`
-                      : "border-gray-700 hover:border-gray-500"
-                  }`}
+                  className={`px-6 py-2 rounded-md border transition-all ${activeFilter === filter
+                    ? `${accentColors[accentColor]} shadow-glow`
+                    : "border-gray-700 hover:border-gray-500"
+                    }`}
                   onClick={() => setActiveFilter(filter)}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
