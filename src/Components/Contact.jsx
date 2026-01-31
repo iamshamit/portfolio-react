@@ -85,8 +85,8 @@ const Contact = () => {
       {/* Decorative elements */}
       <div className={`absolute -bottom-20 -right-20 w-80 h-80 ${accentColors[accentColor].replace('text-', 'bg-').replace('border-', 'bg-').replace('shadow-', 'bg-')} opacity-5 rounded-full blur-3xl`}></div>
       <div className="absolute top-20 left-10 w-20 h-20 border border-gray-700 rounded-full opacity-20"></div>
-      
-      <div className="max-w-4xl mx-auto">
+
+      <div className="max-w-6xl mx-auto">
         <motion.div
           variants={containerVariants}
           initial="hidden"
@@ -99,13 +99,13 @@ const Contact = () => {
           >
             {'// Contact'}
           </motion.h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <motion.div variants={itemVariants}>
               <p className="text-gray-300 mb-8">
                 Have a project in mind or want to collaborate? Feel free to reach out. I&apos;m always open to discussing new opportunities and ideas.
               </p>
-              
+
               <div className="space-y-4 mb-8">
                 <div className="flex items-center gap-4">
                   <motion.a
@@ -125,7 +125,7 @@ const Contact = () => {
                     <p className="text-gray-200">shamitmishra22@gmail.com</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-4">
                   <motion.a
                     href="https://en.wikipedia.org/wiki/Odisha"
@@ -146,7 +146,7 @@ const Contact = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="mt-8">
                 <h4 className="text-lg font-medium mb-4">Find me on</h4>
                 <div className="flex gap-4">
@@ -172,7 +172,7 @@ const Contact = () => {
                 </div>
               </div>
             </motion.div>
-            
+
             <motion.div variants={itemVariants}>
               <motion.form
                 className="space-y-6 bg-black/30 backdrop-blur-sm p-6 rounded-lg border border-gray-800"
@@ -195,7 +195,7 @@ const Contact = () => {
                     variants={inputVariants}
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-gray-300 mb-2 text-sm">Email</label>
                   <motion.input
@@ -211,7 +211,7 @@ const Contact = () => {
                     variants={inputVariants}
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-gray-300 mb-2 text-sm">Message</label>
                   <motion.textarea
@@ -227,7 +227,7 @@ const Contact = () => {
                     variants={inputVariants}
                   />
                 </div>
-                
+
                 <motion.button
                   type="submit"
                   className={`w-full px-6 py-3 border ${accentColors[accentColor]} rounded hover:shadow-glow transition-all flex items-center justify-center space-x-2`}
