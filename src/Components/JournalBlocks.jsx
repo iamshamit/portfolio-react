@@ -117,7 +117,7 @@ function Prerequisites({ items }) {
       <div className="a-checklist-head">Prerequisites</div>
       <ul>
         {items.map((item, i) => (
-          <li key={i}><span className="a-check">✓</span>{item}</li>
+          <li key={i}><span className="a-check">✓</span>{fmt(item)}</li>
         ))}
       </ul>
     </div>
@@ -130,7 +130,7 @@ function Outcome({ items }) {
       <div className="a-checklist-head">What you'll build</div>
       <ul>
         {items.map((item, i) => (
-          <li key={i}><span className="a-check">✓</span>{item}</li>
+          <li key={i}><span className="a-check">✓</span>{fmt(item)}</li>
         ))}
       </ul>
     </div>
@@ -470,14 +470,18 @@ function ProjectCard({ project }) {
 
 // ── TOC ───────────────────────────────────────────────────────────────────────
 
-export function Toc({ body }) {
-  const headings = body
+function extractHeadings(body) {
+  return body
     .filter(b => b.h || b.h2 || b.h3)
     .map(b => ({
       text: b.h || b.h2 || b.h3,
       level: b.h ? 1 : b.h2 ? 2 : 3,
       id: slug(b.h || b.h2 || b.h3),
     }));
+}
+
+export function Toc({ body }) {
+  const headings = extractHeadings(body);
   if (!headings.length) return null;
   return (
     <div className="a-toc">
@@ -492,13 +496,7 @@ export function Toc({ body }) {
 }
 
 export function TocMobile({ body }) {
-  const headings = body
-    .filter(b => b.h || b.h2 || b.h3)
-    .map(b => ({
-      text: b.h || b.h2 || b.h3,
-      level: b.h ? 1 : b.h2 ? 2 : 3,
-      id: slug(b.h || b.h2 || b.h3),
-    }));
+  const headings = extractHeadings(body);
   if (!headings.length) return null;
   return (
     <details className="a-toc-details">
