@@ -33,7 +33,7 @@ a{color:inherit;text-decoration:none}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
 ::selection{background:rgba(255,172,46,.28);color:#fff}
 
-@media (pointer:fine){ *{cursor:none} }
+@media (pointer:fine){ *,a,button,summary{cursor:none} }
 
 .well{max-width:var(--maxw);margin:0 auto;padding:0 40px;width:100%}
 .gradient-text{
