@@ -146,7 +146,8 @@
 
 /* ── Tabs ────────────────────────────────────────────────────────────────────── */
 .a-tabs { margin:26px 0; }
-.a-tab-list { display:flex; border-bottom:1px solid var(--faint); overflow-x:auto; }
+.a-tab-list { display:flex; border-bottom:1px solid var(--faint); overflow-x:auto; scrollbar-width:none; }
+.a-tab-list::-webkit-scrollbar { display:none; }
 .a-tab-btn { padding:10px 18px; font-size:13px; letter-spacing:.04em; color:var(--muted); background:none; border:none; border-bottom:2px solid transparent; cursor:pointer; transition:color .2s,border-color .2s; white-space:nowrap; margin-bottom:-1px; }
 .a-tab-btn.active { color:#fff; border-bottom-color:#ffac2e; }
 :root[data-grad="teal"]   .a-tab-btn.active { border-bottom-color:#4ec9b0; }
