@@ -339,6 +339,25 @@ body.cursor-view .cursor-ring{width:84px;height:84px}
   .jarrow{display:none}
 }
 
+/* ── Journal index page ──────────────────────────────────────────────────── */
+.ji-page{min-height:100vh;max-width:var(--maxw);margin:0 auto;padding:80px 40px 120px}
+.ji-back{display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;margin-bottom:52px;transition:color .2s}
+.ji-back:hover{color:#fff}
+.ji-eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.ji-title{font-size:clamp(40px,5.5vw,72px);font-weight:400;letter-spacing:-.03em;line-height:1;margin-bottom:10px}
+.ji-sub{font-size:14px;color:var(--muted);margin-bottom:44px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:44px}
+.filter-tag{font-size:11px;letter-spacing:.1em;text-transform:uppercase;border:1px solid var(--faint);border-radius:var(--radius-full);padding:6px 15px;cursor:pointer;color:rgba(255,255,255,.45);background:none;transition:border-color .2s,color .2s}
+.filter-tag:hover{color:rgba(255,255,255,.8);border-color:var(--border)}
+.filter-tag.active{border-color:rgba(160,224,171,.5);color:#a0e0ab}
+.j-seeall{display:flex;align-items:center;justify-content:space-between;padding:22px 0;border-bottom:1px solid var(--faint)}
+.j-more{font-size:12px;color:var(--muted);letter-spacing:.04em}
+.j-link{font-size:13px;color:rgba(255,255,255,.6);text-decoration:none;display:inline-flex;align-items:center;gap:7px;letter-spacing:.04em;transition:color .25s}
+.j-link:hover{color:#fff}
+.j-link span{display:inline-block;transition:transform .35s var(--ease)}
+.j-link:hover span{transform:translateX(5px)}
+@media(max-width:640px){.ji-page{padding:60px 24px 80px}}
+
 .article{position:fixed;inset:0;z-index:95;pointer-events:none}
 .article-scrim{position:absolute;inset:0;background:#040404;opacity:0;transition:opacity .5s var(--ease)}
 .article.open{pointer-events:auto}
