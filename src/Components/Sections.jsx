@@ -2,6 +2,7 @@ import React from 'react';
 import { PORTFOLIO } from '../data/config';
 import { Field, SMMark } from './Field';
 import { BlockRenderer, Toc, TocMobile } from './JournalBlocks';
+import { Link } from 'react-router-dom';
 
 export function Skills() {
   return (
@@ -150,17 +151,20 @@ export function Footer() {
 
 export function Journal({ onOpen }) {
   if (!PORTFOLIO.journal || !PORTFOLIO.journal.length) return null;
+  const shown = PORTFOLIO.journal.slice(0, 4);
+  const remaining = PORTFOLIO.journal.length - shown.length;
   return (
     <section className="section" id="journal" data-screen-label="Journal">
       <div className="well">
         <div className="sec-head">
           <div className="idx"><span className="bar" />07 — Journal</div>
-          <h2 className="reveal">Notes & writing.</h2>
+          <h2 className="reveal">Notes &amp; writing.</h2>
           <div className="note">{PORTFOLIO.journal.length} entries</div>
         </div>
         <div className="journal reveal" data-stagger="">
-          {PORTFOLIO.journal.map((post, i) => (
-            <button className="jrow" key={post.num} data-cursor="view" onClick={() => onOpen(i)}>
+          {shown.map((post) => (
+            <button className="jrow" key={post.num} data-cursor="view"
+              onClick={() => onOpen(PORTFOLIO.journal.indexOf(post))}>
               <div className="jnum">{post.num}</div>
               <div className="jmain">
                 <div className="jtitle">{post.title}</div>
@@ -173,6 +177,12 @@ export function Journal({ onOpen }) {
               <span className="jarrow">→</span>
             </button>
           ))}
+          {remaining > 0 && (
+            <div className="j-seeall">
+              <span className="j-more">+{remaining} more entr{remaining === 1 ? 'y' : 'ies'}</span>
+              <Link to="/journal" className="j-link">All writing <span>→</span></Link>
+            </div>
+          )}
         </div>
       </div>
     </section>
