@@ -58,12 +58,10 @@ export default function App() {
   };
 
   const navArticle = (dir) => {
-    setArticle((prev) => {
-      if (prev == null) return prev;
-      const next = (prev + dir + journalLen) % journalLen;
-      navigate(`/blog/${slugify(PORTFOLIO.journal[next].title)}`);
-      return next;
-    });
+    if (article == null) return;
+    const next = (article + dir + journalLen) % journalLen;
+    setArticle(next);
+    navigate(`/blog/${slugify(PORTFOLIO.journal[next].title)}`);
   };
 
   React.useEffect(() => {
