@@ -2,13 +2,20 @@ import React from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
+import { useNavigate, useLocation, Routes, Route } from 'react-router-dom';
 import './App.css';
 import './index.css';
+import { PORTFOLIO } from './data/config';
 import { useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle, TweakRadio, TweakText } from './components/TweaksPanel';
 import { Cursor, HeroBackdrop, Nav, Overlay } from './components/Field';
 import { Hero, Marquee, About } from './components/Hero';
 import { Featured, Gallery } from './components/Work';
 import { Skills, Timeline, GitHub, Journal, Article, Contact, Footer } from './components/Sections';
+import JournalPage from './components/JournalPage';
+
+function slugify(text) {
+  return String(text).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -25,9 +32,39 @@ const TWEAK_DEFAULTS = {
 export default function App() {
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
   const [menu, setMenu] = React.useState(false);
-  const [article, setArticle] = React.useState(null);
-  const journalLen = 5;
-  const navArticle = (dir) => setArticle((i) => i == null ? i : (i + dir + journalLen) % journalLen);
+  // Initialise synchronously from URL so there's no flash on direct /blog/:slug load
+  const [article, setArticle] = React.useState(() => {
+    const m = window.location.pathname.match(/^\/blog\/(.+)/);
+    if (m) {
+      const idx = PORTFOLIO.journal.findIndex(p => slugify(p.title) === m[1]);
+      return idx >= 0 ? idx : null;
+    }
+    return null;
+  });
+  const navigate = useNavigate();
+  const location = useLocation();
+  const journalLen = PORTFOLIO.journal.length;
+  const [originPath, setOriginPath] = React.useState('/');
+
+  const openArticle = (i) => {
+    setOriginPath(window.location.pathname);
+    setArticle(i);
+    navigate(`/blog/${slugify(PORTFOLIO.journal[i].title)}`);
+  };
+
+  const closeArticle = () => {
+    setArticle(null);
+    navigate(originPath);
+  };
+
+  const navArticle = (dir) => {
+    setArticle((prev) => {
+      if (prev == null) return prev;
+      const next = (prev + dir + journalLen) % journalLen;
+      navigate(`/blog/${slugify(PORTFOLIO.journal[next].title)}`);
+      return next;
+    });
+  };
 
   React.useEffect(() => {
     const r = document.documentElement;
@@ -197,55 +234,68 @@ export default function App() {
     };
   }, []);
 
+  const isJournal = location.pathname === '/journal';
   const hero = { line1: t.heroLine1, line2: t.heroLine2, sub: t.heroSub };
 
   return (
     <>
-      {t.cursor && <Cursor />}
+      {t.cursor && !isJournal && <Cursor />}
       <HeroBackdrop />
       <div className="grain" />
       <div className="progress" data-progress="" />
-      <Nav onOpen={() => setMenu(true)} />
-      <Overlay open={menu} onClose={() => setMenu(false)} />
+      {!isJournal && <Nav onOpen={() => setMenu(true)} />}
+      {!isJournal && <Overlay open={menu} onClose={() => setMenu(false)} />}
 
-      <main>
-        <Hero hero={hero} />
-        <Marquee />
-        <About />
-        <Featured />
-        <Gallery />
-        <Skills />
-        <Timeline />
-        <GitHub />
-        <Journal onOpen={setArticle} />
-        <Contact />
-      </main>
-      <Footer />
-      <Article index={article} onClose={() => setArticle(null)} onNav={navArticle} />
+      <Routes>
+        <Route path="/journal" element={
+          <JournalPage openArticle={openArticle} />
+        } />
+        <Route path="*" element={
+          <>
+            <main>
+              <Hero hero={hero} />
+              <Marquee />
+              <About />
+              <Featured />
+              <Gallery />
+              <Skills />
+              <Timeline />
+              <GitHub />
+              <Journal onOpen={openArticle} />
+              <Contact />
+            </main>
+            <Footer />
+          </>
+        } />
+      </Routes>
 
-      <TweaksPanel>
-        <TweakSection label="Atmosphere" />
-        <TweakRadio label="Gradient" value={t.gradient}
-          options={['ocean', 'teal', 'aurora', 'ember']}
-          onChange={(v) => setTweak('gradient', v)} />
-        <TweakSlider label="Motion" value={t.motion} min={0.3} max={2} step={0.1} unit="×"
-          onChange={(v) => setTweak('motion', v)} />
-        <TweakToggle label="Custom cursor" value={t.cursor}
-          onChange={(v) => setTweak('cursor', v)} />
+      <Article index={article} onClose={closeArticle} onNav={navArticle} />
 
-        <TweakSection label="Typography" />
-        <TweakRadio label="Accent face" value={t.accentFont}
-          options={['Raleway', 'General Sans']}
-          onChange={(v) => setTweak('accentFont', v)} />
+      {!isJournal && (
+        <TweaksPanel>
+          <TweakSection label="Atmosphere" />
+          <TweakRadio label="Gradient" value={t.gradient}
+            options={['ocean', 'teal', 'aurora', 'ember']}
+            onChange={(v) => setTweak('gradient', v)} />
+          <TweakSlider label="Motion" value={t.motion} min={0.3} max={2} step={0.1} unit="×"
+            onChange={(v) => setTweak('motion', v)} />
+          <TweakToggle label="Custom cursor" value={t.cursor}
+            onChange={(v) => setTweak('cursor', v)} />
 
-        <TweakSection label="Hero copy" />
-        <TweakText label="Line 1" value={t.heroLine1}
-          onChange={(v) => setTweak('heroLine1', v)} />
-        <TweakText label="Line 2" value={t.heroLine2}
-          onChange={(v) => setTweak('heroLine2', v)} />
-        <TweakText label="Subtitle" value={t.heroSub}
-          onChange={(v) => setTweak('heroSub', v)} />
-      </TweaksPanel>
+          <TweakSection label="Typography" />
+          <TweakRadio label="Accent face" value={t.accentFont}
+            options={['Raleway', 'General Sans']}
+            onChange={(v) => setTweak('accentFont', v)} />
+
+          <TweakSection label="Hero copy" />
+          <TweakText label="Line 1" value={t.heroLine1}
+            onChange={(v) => setTweak('heroLine1', v)} />
+          <TweakText label="Line 2" value={t.heroLine2}
+            onChange={(v) => setTweak('heroLine2', v)} />
+          <TweakText label="Subtitle" value={t.heroSub}
+            onChange={(v) => setTweak('heroSub', v)} />
+        </TweaksPanel>
+      )}
     </>
   );
 }
