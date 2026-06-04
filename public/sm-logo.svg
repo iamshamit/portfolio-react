@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 210 180" fill="none">
+  <defs>
+    <linearGradient id="smg" x1="0" y1="0.1" x2="1" y2="0.9">
+      <stop offset="0" stop-color="#a0e0ab" />
+      <stop offset="0.5" stop-color="#ffac2e" />
+      <stop offset="1" stop-color="#a52d25" />
+    </linearGradient>
+    <style>
+      .m { stroke: #0a0a0a; }
+      @media (prefers-color-scheme: dark) {
+        .m { stroke: #ffffff; }
+      }
+    </style>
+  </defs>
+  <path d="M93 60 C93 45 65 43 55 54 C45 64 53 80 67 85 C83 91 91 103 81 115 C72 124 47 123 39 110"
+    fill="none" stroke="url(#smg)" stroke-width="12" stroke-linecap="round" />
+  <path class="m" d="M101 130 L101 50 L139 99 L177 50 L177 130"
+    fill="none" stroke-width="12" stroke-linejoin="round" stroke-linecap="round" />
+</svg>
