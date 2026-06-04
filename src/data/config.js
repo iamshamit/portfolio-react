@@ -51,7 +51,7 @@ export const PORTFOLIO = {
       mock: "browser",
       mockUrl: "nexara.iamshamit.app",
       screenshot: "/screenshots/nexara.png",
-      url: "https://nexara.iamshamit.xyz/",
+      url: "https://nexara.iamshamit.com/",
       repo: "https://github.com/iamshamit/Freelancer",
     },
     {
