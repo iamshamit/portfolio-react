@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-jsx';
@@ -482,13 +482,38 @@ function extractHeadings(body) {
 
 export function Toc({ body }) {
   const headings = extractHeadings(body);
+  const [activeId, setActiveId] = useState('');
+  const observerRef = useRef(null);
+
+  useEffect(() => {
+    if (!headings.length) return;
+    const ids = headings.map(h => h.id);
+    const elements = ids.map(id => document.getElementById(id)).filter(Boolean);
+
+    observerRef.current = new IntersectionObserver(
+      entries => {
+        // pick the topmost heading that is intersecting
+        const visible = entries.filter(e => e.isIntersecting).map(e => e.target.id);
+        if (visible.length) {
+          // use the one earliest in document order
+          const first = ids.find(id => visible.includes(id));
+          if (first) setActiveId(first);
+        }
+      },
+      { rootMargin: '0px 0px -60% 0px', threshold: 0 }
+    );
+
+    elements.forEach(el => observerRef.current.observe(el));
+    return () => observerRef.current?.disconnect();
+  }, [body]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!headings.length) return null;
   return (
     <div className="a-toc">
       <div className="a-toc-label">Contents</div>
       <nav>
         {headings.map((h, i) => (
-          <a key={i} href={`#${h.id}`} data-level={h.level}>{h.text}</a>
+          <a key={i} href={`#${h.id}`} data-level={h.level} className={activeId === h.id ? 'toc-active' : ''}>{h.text}</a>
         ))}
       </nav>
     </div>

@@ -237,7 +237,7 @@ export default function App() {
 
   return (
     <>
-      {t.cursor && !isJournal && <Cursor />}
+      {t.cursor && <Cursor />}
       <HeroBackdrop />
       <div className="grain" />
       <div className="progress" data-progress="" />

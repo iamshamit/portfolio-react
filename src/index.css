@@ -340,7 +340,8 @@ body.cursor-view .cursor-ring{width:84px;height:84px}
 }
 
 /* ── Journal index page ──────────────────────────────────────────────────── */
-.ji-page{min-height:100vh;max-width:var(--maxw);margin:0 auto;padding:80px 40px 120px}
+.ji-wrap{min-height:100vh;background:var(--bg);position:relative;z-index:2}
+.ji-page{max-width:var(--maxw);margin:0 auto;padding:80px 40px 120px}
 .ji-back{display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:none;margin-bottom:52px;transition:color .2s}
 .ji-back:hover{color:#fff}
 .ji-eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
@@ -357,6 +358,7 @@ body.cursor-view .cursor-ring{width:84px;height:84px}
 .j-link span{display:inline-block;transition:transform .35s var(--ease)}
 .j-link:hover span{transform:translateX(5px)}
 @media(max-width:640px){.ji-page{padding:60px 24px 80px}}
+
 
 .article{position:fixed;inset:0;z-index:95;pointer-events:none}
 .article-scrim{position:absolute;inset:0;background:#040404;opacity:0;transition:opacity .5s var(--ease)}

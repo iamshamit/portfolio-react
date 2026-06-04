@@ -204,10 +204,11 @@
 /* ── TOC ─────────────────────────────────────────────────────────────────────── */
 .a-toc-label { font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
 .a-toc nav { display:flex; flex-direction:column; gap:2px; }
-.a-toc a { font-size:13px; line-height:1.5; color:rgba(255,255,255,.45); text-decoration:none; transition:color .2s,border-color .2s; padding:4px 0 4px 12px; border-left:2px solid transparent; display:block; }
+.a-toc a { font-size:13px; line-height:1.5; color:rgba(255,255,255,.45); text-decoration:none; transition:color .2s,border-color .2s,background-size .2s; padding:4px 0 4px 12px; border-left:2px solid transparent; display:block; }
 .a-toc a:hover { color:rgba(255,255,255,.8); }
 .a-toc a[data-level="2"] { padding-left:22px; font-size:12px; }
 .a-toc a[data-level="3"] { padding-left:34px; font-size:12px; }
+.a-toc a.toc-active { background:linear-gradient(90deg,rgb(160,224,171),rgb(255,172,46) 50%,rgb(165,45,37)); -webkit-background-clip:text; background-clip:text; color:transparent; border-left-color:rgb(160,224,171); }
 
 .a-toc-details { margin-bottom:30px; border:1px solid var(--faint); border-radius:10px; overflow:hidden; }
 .a-toc-details summary { padding:12px 16px; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); list-style:none; user-select:none; }
