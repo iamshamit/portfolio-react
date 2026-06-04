@@ -6,12 +6,11 @@ import { useNavigate, useLocation, Routes, Route } from 'react-router-dom';
 import './App.css';
 import './index.css';
 import { PORTFOLIO } from './data/config';
-import { useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle, TweakRadio, TweakText } from './components/TweaksPanel';
-import { Cursor, HeroBackdrop, Nav, Overlay } from './components/Field';
-import { Hero, Marquee, About } from './components/Hero';
-import { Featured, Gallery } from './components/Work';
-import { Skills, Timeline, GitHub, Journal, Article, Contact, Footer } from './components/Sections';
-import JournalPage from './components/JournalPage';
+import { Cursor, HeroBackdrop, Nav, Overlay } from './Components/Field';
+import { Hero, Marquee, About } from './Components/Hero';
+import { Featured, Gallery } from './Components/Work';
+import { Skills, Timeline, GitHub, Journal, Article, Contact, Footer } from './Components/Sections';
+import JournalPage from './Components/JournalPage';
 
 function slugify(text) {
   return String(text).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -19,18 +18,7 @@ function slugify(text) {
 
 gsap.registerPlugin(ScrollTrigger);
 
-const TWEAK_DEFAULTS = {
-  gradient: 'ocean',
-  motion: 1,
-  accentFont: 'Raleway',
-  cursor: true,
-  heroLine1: 'Shamit',
-  heroLine2: 'Mishra.',
-  heroSub: 'I design and build modern web applications, resilient backend systems, and AI-powered products — engineering experiences that connect, compute, and inspire.',
-};
-
 export default function App() {
-  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
   const [menu, setMenu] = React.useState(false);
   // Initialise synchronously from URL so there's no flash on direct /blog/:slug load
   const [article, setArticle] = React.useState(() => {
@@ -63,14 +51,6 @@ export default function App() {
     setArticle(next);
     navigate(`/blog/${slugify(PORTFOLIO.journal[next].title)}`);
   };
-
-  React.useEffect(() => {
-    const r = document.documentElement;
-    r.setAttribute('data-grad', t.gradient);
-    r.style.setProperty('--motion', String(t.motion));
-    r.style.setProperty('--ral', t.accentFont === 'Raleway' ? "'Raleway',serif" : "'General Sans',sans-serif");
-    document.body.classList.toggle('no-cursor', !t.cursor);
-  }, [t.gradient, t.motion, t.accentFont, t.cursor]);
 
   // Motion engine — runs once after mount
   React.useEffect(() => {
@@ -233,11 +213,15 @@ export default function App() {
   }, []);
 
   const isJournal = location.pathname === '/journal';
-  const hero = { line1: t.heroLine1, line2: t.heroLine2, sub: t.heroSub };
+  const hero = {
+    line1: 'Shamit',
+    line2: 'Mishra.',
+    sub: 'I design and build modern web applications, resilient backend systems, and AI-powered products — engineering experiences that connect, compute, and inspire.',
+  };
 
   return (
     <>
-      {t.cursor && <Cursor />}
+      <Cursor />
       <HeroBackdrop />
       <div className="grain" />
       <div className="progress" data-progress="" />
@@ -268,32 +252,6 @@ export default function App() {
       </Routes>
 
       <Article index={article} onClose={closeArticle} onNav={navArticle} />
-
-      {!isJournal && (
-        <TweaksPanel>
-          <TweakSection label="Atmosphere" />
-          <TweakRadio label="Gradient" value={t.gradient}
-            options={['ocean', 'teal', 'aurora', 'ember']}
-            onChange={(v) => setTweak('gradient', v)} />
-          <TweakSlider label="Motion" value={t.motion} min={0.3} max={2} step={0.1} unit="×"
-            onChange={(v) => setTweak('motion', v)} />
-          <TweakToggle label="Custom cursor" value={t.cursor}
-            onChange={(v) => setTweak('cursor', v)} />
-
-          <TweakSection label="Typography" />
-          <TweakRadio label="Accent face" value={t.accentFont}
-            options={['Raleway', 'General Sans']}
-            onChange={(v) => setTweak('accentFont', v)} />
-
-          <TweakSection label="Hero copy" />
-          <TweakText label="Line 1" value={t.heroLine1}
-            onChange={(v) => setTweak('heroLine1', v)} />
-          <TweakText label="Line 2" value={t.heroLine2}
-            onChange={(v) => setTweak('heroLine2', v)} />
-          <TweakText label="Subtitle" value={t.heroSub}
-            onChange={(v) => setTweak('heroSub', v)} />
-        </TweaksPanel>
-      )}
     </>
   );
 }
