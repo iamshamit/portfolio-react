@@ -213,11 +213,7 @@ export default function App() {
   }, []);
 
   const isJournal = location.pathname === '/journal';
-  const hero = {
-    line1: 'Shamit',
-    line2: 'Mishra.',
-    sub: 'I design and build modern web applications, resilient backend systems, and AI-powered products — engineering experiences that connect, compute, and inspire.',
-  };
+  const hero = PORTFOLIO.hero;
 
   return (
     <>
