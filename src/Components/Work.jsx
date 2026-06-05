@@ -365,7 +365,7 @@ function Feat({ p }) {
         </div>
         <div className="feat-actions reveal">
           <a className="btn-ghost" href={p.url} target="_blank" rel="noreferrer">Live <span>→</span></a>
-          <a className="btn-ghost" href={p.repo} target="_blank" rel="noreferrer">Code</a>
+          {p.repo && p.repo !== "#" && <a className="btn-ghost" href={p.repo} target="_blank" rel="noreferrer">Code</a>}
         </div>
       </div>
     </article>
