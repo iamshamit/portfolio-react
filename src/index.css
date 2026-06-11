@@ -249,6 +249,9 @@ body.cursor-view .cursor-ring{width:84px;height:84px}
 .mock.terminal .cursor-blink{display:inline-block;width:8px;height:15px;background:#a0e0ab;vertical-align:-2px;animation:blink 1.1s steps(2) infinite}
 @keyframes blink{50%{opacity:0}}
 
+.blink-dot{animation:blink-dot 2s infinite}
+@keyframes blink-dot{0%,100%{opacity:1}50%{opacity:.2}}
+
 .gallery-wrap{position:relative;z-index:1;background:#000;overflow:hidden}
 .gallery-sticky{height:100vh;display:flex;align-items:center;overflow:hidden}
 .gallery-track{display:flex;gap:40px;padding:0 60px;will-change:transform}
@@ -425,6 +428,7 @@ body.cursor-view .cursor-ring{width:84px;height:84px}
 @media(prefers-reduced-motion:reduce){
   .field .marble,.field .sphere,.field .sphere .caustic{animation:none}
   .reveal,[data-stagger]>*{opacity:1;transform:none;transition:none}
+  .blink-dot,.mock.terminal .cursor-blink{animation:none}
 }
 
 @media(max-width:960px){
