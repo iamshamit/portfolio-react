@@ -441,6 +441,10 @@ body.cursor-view .cursor-ring{width:84px;height:84px}
   .hero{height:100svh;min-height:540px}
   .hero h1{font-size:clamp(46px,15vw,96px)}
   .hero .sub{margin-top:28px}
+  .hblob .bi{will-change:auto;filter:blur(45px)}
+  .hb2 .bi{filter:blur(55px)}
+  .hb3 .bi{filter:blur(48px)}
+  .h-light{will-change:auto}
   .gallery-wrap{overflow:visible}
   .gallery-sticky{height:auto;display:block;overflow-x:auto;overflow-y:hidden;
     -webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;
