@@ -32,6 +32,9 @@
   uniform vec3  u_c1, u_c2, u_c3;
   uniform float u_pulse;    // pulsing amber light intensity
   uniform float u_fade;     // global fade (sphere drift-away phase)
+  uniform float u_outside;  // 0 = world visible only through the sphere (intro portal), 1 = normal
+  uniform vec2  u_stretch;  // outro lens: squash-and-stretch along travel (aspect-corrected dir * amount)
+  uniform float u_ripple;   // outro lens: click ripple age 0..1, <0 = none
 
   float hash(vec2 p){ p = fract(p*vec2(123.34,456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }
   float noise(vec2 p){
@@ -69,10 +72,16 @@
     float t = u_time * 0.05;
     vec2 m = u_warp;
 
-    vec3 col = field(uv, t, m);
+    vec3 col = field(uv, t, m) * u_outside;
 
     // ---- glass sphere ----
     vec2 d = uv - u_sphere; d.x *= u_aspect;
+    float sl = length(u_stretch);
+    if(sl > 0.001){   // elongate along travel, thin across it (roughly area-preserving)
+      vec2 dir = u_stretch / sl;
+      float a = dot(d, dir);
+      d = dir * (a / (1.0 + sl)) + (d - dir * a) * (1.0 + sl * 0.6);
+    }
     float dist = length(d);
     float n = dist / u_sphereR;          // 0 centre → 1 edge
     if(n < 1.06){
@@ -89,12 +98,20 @@
       scol += smoothstep(0.92,1.0,n) * smoothstep(0.3,1.0,ca) * vec3(1.0,0.84,0.55) * 0.5;
 
       // soft specular tucked on the upper-left rim
-      float spec = smoothstep(0.045, 0.0, length(d - vec2(-u_sphereR*0.52, u_sphereR*0.5)));
+      float spec = smoothstep(min(0.045, u_sphereR*0.2), 0.0, length(d - vec2(-u_sphereR*0.52, u_sphereR*0.5)));
       scol += spec * vec3(1.0,0.97,0.9) * 0.28;
+
+      // click ripple: a bright ring racing from the centre out through the rim
+      if(u_ripple >= 0.0){
+        float band = exp(-pow((n - u_ripple * 1.3) * 7.0, 2.0)) * (1.0 - u_ripple);
+        scol += mix(u_c1, vec3(1.0, 0.9, 0.7), 0.5) * band * 0.7;
+      }
 
       float edge = smoothstep(1.0, 0.975, n);
       col = mix(col, scol, edge);
     }
+    // intro: faint halo around the lone sphere in the void
+    col += mix(u_c1, u_c2, 0.5) * 0.14 * exp(-max(n - 1.0, 0.0) * 5.0) * step(1.0, n) * (1.0 - u_outside);
 
     // sink the void: gentle vignette + soft darken lower-left for headline legibility
     col *= smoothstep(1.85, 0.2, length(uv - 0.5));
@@ -103,10 +120,10 @@
     // pulsing amber light source near the right edge (small bloom, not a wash)
     vec2 ld = uv - vec2(0.96, 0.4); ld.x *= u_aspect;
     float lg = exp(-dot(ld,ld) * 8.5);
-    col += mix(u_c2, vec3(1.0,0.78,0.4), 0.4) * lg * u_pulse * 0.22;
+    col += mix(u_c2, vec3(1.0,0.78,0.4), 0.4) * lg * u_pulse * 0.22 * u_outside;
 
     // very faint warm haze lifting the lower third
-    col += u_c2 * 0.012 * smoothstep(0.0, 1.0, uv.y) * u_pulse;
+    col += u_c2 * 0.012 * smoothstep(0.0, 1.0, uv.y) * u_pulse * u_outside;
 
     col = pow(col, vec3(0.98));
     col *= u_fade;
@@ -128,6 +145,7 @@
     gl.attachShader(prog, compile(gl, gl.VERTEX_SHADER, VERT));
     gl.attachShader(prog, compile(gl, gl.FRAGMENT_SHADER, FRAG));
     gl.linkProgram(prog); gl.useProgram(prog);
+    global.__fluidOk = true;   // App only plays the sphere intro when this is set
 
     const buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
@@ -139,7 +157,8 @@
     const U = (n) => gl.getUniformLocation(prog, n);
     const u = { res:U('u_res'), time:U('u_time'), aspect:U('u_aspect'), warp:U('u_warp'),
                 sphere:U('u_sphere'), sphereR:U('u_sphereR'), c1:U('u_c1'), c2:U('u_c2'), c3:U('u_c3'),
-                pulse:U('u_pulse'), fade:U('u_fade') };
+                pulse:U('u_pulse'), fade:U('u_fade'), outside:U('u_outside'),
+                stretch:U('u_stretch'), ripple:U('u_ripple') };
 
     const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
     const mobile = matchMedia('(max-width:760px)').matches || matchMedia('(pointer:coarse)').matches;
@@ -165,11 +184,14 @@
     addEventListener('mousemove', onMove, { passive:true });
 
     const start = performance.now();
-    const smooth = (a,b,x)=>{ const t = Math.max(0, Math.min(1, (x-a)/(b-a))); return t*t*(3-2*t); };
+    // outro lens: spring state (x/y in uv, r in uv-y units) — see the outro block in frame()
+    let lx = 0.5, ly = 0.5, lr = 0.13, lvx = 0, lvy = 0, lvr = 0, lastT = start, lastRipple = 0;
+    const lin = (a,b,x)=>Math.max(0, Math.min(1, (x-a)/(b-a)));
+    const smooth = (a,b,x)=>{ const t = lin(a,b,x); return t*t*(3-2*t); };
     let raf, running = true;
     function frame(){
       if(!running) return;
-      if(window.__heroInView === false){ raf = requestAnimationFrame(frame); return; }  // pause when hero off-screen
+      if(window.__heroInView === false && !window.__outroInView){ raf = requestAnimationFrame(frame); return; }  // pause when neither hero nor contact is on screen
       syncSize();   // re-sync buffer to live client size (survives pin reflows)
       mx += (tx - mx) * 0.05; my += (ty - my) * 0.05;
       const cols = PRESETS[document.documentElement.dataset.grad] || PRESETS.ocean;
@@ -192,7 +214,59 @@
       sphX += away * 0.5;
       sphY -= away * 0.16;
       sphR *= (1 - away * 0.35);
-      const fade = 1 - away * 0.45;        // never fully black; pin releases into next section
+      let fade = 1 - away * 0.45;          // never fully black; pin releases into next section
+
+      // ---- intro portal: window.__intro 0→1 (tweened by App's GSAP timeline; absent = 1) ----
+      // birth: pinpoint at centre · swell: rushes past every corner · settle: contracts into the rest pose
+      const ip = Math.min(1, Math.max(0, window.__intro ?? 1));
+      let outside = 1;
+      if(ip < 1){
+        const cover = Math.hypot(W / H * 0.5, 0.5) * 1.2;           // radius that clears every corner
+        const born  = 1 - Math.pow(1 - lin(0, 0.3, ip), 3);           // ease-out cubic
+        const swell = Math.pow(lin(0.38, 0.6, ip), 4);                // ease-in quart: slow build, then rush
+        const s = lin(0.64, 1, ip);
+        const settle = s < 0.5 ? 8*s*s*s*s : 1 - Math.pow(-2*s + 2, 4) / 2;   // ease-in-out quart
+        const rIntro = 0.085 * born + 0.025 * lin(0.3, 0.6, ip);
+        const rBig = rIntro + (cover - rIntro) * swell;
+        sphR = rBig + (sphR - rBig) * settle;
+        sphX = 0.5 + (sphX - 0.5) * settle;
+        sphY = 0.5 + (sphY - 0.5) * settle;
+        outside = lin(0.6, 0.63, ip);                                 // flips while the sphere covers the screen
+      }
+
+      // ---- outro "hold the portal": window.__outro 0→1 as Contact scrolls in ----
+      // the world goes dark and the sphere becomes a lens on a jelly spring that follows window.__lens
+      // ({x,y} client px, t = last pointer ms, el = hovered link, ripple = click ms; written by Contact)
+      const now = performance.now();
+      const f = Math.min((now - lastT) / 16.667, 3); lastT = now;      // frame-rate independent spring
+      const op = reduce ? 0 : Math.min(1, Math.max(0, window.__outro || 0));
+      let stretchX = 0, stretchY = 0, ripple = -1;
+      if(op > 0){
+        const L = window.__lens || {};
+        let gx, gy, gr = 0.13;
+        if(L.el){                                                     // snap onto the hovered link, swell to cover it
+          const b = L.el.getBoundingClientRect();
+          gx = (b.left + b.width / 2) / innerWidth; gy = 1 - (b.top + b.height / 2) / innerHeight;
+          gr = Math.min(0.24, Math.max(0.15, b.width / innerHeight * 0.62));
+        } else if(now - (L.t || -1e9) < 2500){                        // follow the pointer
+          gx = L.x / innerWidth; gy = 1 - L.y / innerHeight;
+        } else {                                                      // idle: wander around the headline
+          gx = 0.5 + 0.26 * Math.sin(time * 0.45); gy = 0.52 + 0.14 * Math.sin(time * 0.62 + 1.0);
+        }
+        if(L.ripple && L.ripple !== lastRipple){ lastRipple = L.ripple; lvr += 0.035; }   // click: jelly kick
+        const damp = Math.pow(0.82, f);
+        lvx = (lvx + (gx - lx) * 0.06 * f) * damp; lx += lvx * f;
+        lvy = (lvy + (gy - ly) * 0.06 * f) * damp; ly += lvy * f;
+        lvr = (lvr + (gr * breathe - lr) * 0.08 * f) * damp; lr += lvr * f;
+        const e = op * op * (3 - 2 * op);
+        sphX += (lx - sphX) * e; sphY += (ly - sphY) * e; sphR += (lr - sphR) * e;
+        fade += (1 - fade) * e;
+        outside = Math.min(outside, 1 - e * 0.94);
+        const vx = lvx * W / H, vy = lvy, sp = Math.hypot(vx, vy);  // stretch along travel, capped
+        if(sp > 1e-5){ const s = Math.min(0.4, sp * 9) * e; stretchX = vx / sp * s; stretchY = vy / sp * s; }
+        const age = (now - (L.ripple || -1e9)) / 900;
+        if(age < 1) ripple = age;
+      }
 
       // pulsing amber light (0.8→1→0.8, ~12s)
       const pulse = 0.8 + (Math.sin(time * 0.52) * 0.5 + 0.5) * 0.2;
@@ -209,6 +283,9 @@
       gl.uniform1f(u.sphereR, sphR);
       gl.uniform1f(u.pulse, pulse);
       gl.uniform1f(u.fade, fade);
+      gl.uniform1f(u.outside, outside);
+      gl.uniform2f(u.stretch, stretchX, stretchY);
+      gl.uniform1f(u.ripple, ripple);
       gl.uniform3fv(u.c1, norm(cols[0]));
       gl.uniform3fv(u.c2, norm(cols[1]));
       gl.uniform3fv(u.c3, norm(cols[2]));

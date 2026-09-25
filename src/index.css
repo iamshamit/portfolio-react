@@ -123,13 +123,26 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 @keyframes marble1{0%,100%{transform:translate(-4%,-2%) rotate(0)}50%{transform:translate(3%,3%) rotate(3deg)}}
 @keyframes marble2{0%,100%{transform:translate(3%,2%) rotate(0)}50%{transform:translate(-3%,-3%) rotate(-3deg)}}
 
+/* Sphere intro (html.intro set pre-paint in index.html; App.jsx runs the timeline) */
+html.intro :is(.nav,.amb,[data-hero-eyebrow],[data-hero-line],[data-hero-sub]){opacity:0}
+/* filter, not opacity: the scrubbed hero-pin timeline tweens these two's opacity and would record 0 */
+html.intro :is(.scroll-cue,.hero .hello){filter:opacity(0)}
+html.intro-out :is(.nav,.amb){transition:opacity 1.4s var(--ease)}
+html.intro-out :is(.scroll-cue,.hero .hello){transition:filter 1.4s var(--ease)}
+/* custom cursor: hidden through the whole intro, and until the real pointer position is known */
+html:is(.intro,.intro-out) :is(.cursor,.cursor-ring,.cursor-label),
+body:not(.cursor-live) :is(.cursor,.cursor-ring,.cursor-label){visibility:hidden}
+.intro-mark{position:fixed;left:50%;top:50%;translate:-50% -50%;z-index:9;pointer-events:none;opacity:0;color:#fff}
+.intro-mark svg{display:block;width:min(80px,11vh);height:auto;filter:drop-shadow(0 2px 14px rgba(0,0,0,.45))}  /* scales with the sphere on short screens */
+
 .grain{position:fixed;inset:0;z-index:8;pointer-events:none;opacity:.06;mix-blend-mode:overlay;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size:160px 160px}
 
 .cursor{position:fixed;top:0;left:0;width:7px;height:7px;border-radius:50%;background:#fff;z-index:9990;pointer-events:none;transform:translate(-50%,-50%);mix-blend-mode:difference;transition:width .3s var(--ease),height .3s var(--ease),background .3s}
-.cursor-ring{position:fixed;top:0;left:0;width:34px;height:34px;border:1px solid rgba(255,255,255,.4);border-radius:50%;z-index:9990;pointer-events:none;transform:translate(-50%,-50%);mix-blend-mode:difference;transition:width .35s var(--ease),height .35s var(--ease),border-color .35s,opacity .3s}
-body.cursor-hover .cursor-ring{width:64px;height:64px;border-color:rgba(255,255,255,.7)}
+.cursor-ring{position:fixed;top:0;left:0;width:34px;height:34px;border:1px solid rgba(255,255,255,.9);border-radius:50%;z-index:9990;pointer-events:none;transform:translate(-50%,-50%);
+  box-shadow:0 0 0 1px rgba(0,0,0,.14),inset 0 0 0 1px rgba(0,0,0,.14);transition:width .35s var(--ease),height .35s var(--ease),border-color .35s,opacity .3s}
+body.cursor-hover .cursor-ring{width:64px;height:64px;border-color:#fff}
 body.cursor-hover .cursor{width:4px;height:4px}
 .cursor-label{position:fixed;top:0;left:0;z-index:9990;pointer-events:none;transform:translate(-50%,-50%);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#fff;mix-blend-mode:difference;opacity:0;transition:opacity .3s}
 body.cursor-view .cursor-label{opacity:1}
@@ -298,13 +311,23 @@ body.cursor-view .cursor-ring{width:84px;height:84px}
 .contrib i{aspect-ratio:1;border-radius:2px;background:rgba(255,255,255,.06)}
 
 .contact{position:relative;z-index:1;text-align:center;padding:190px 0;overflow:hidden}
-.contact .field{opacity:.85}
+/* see-through onto the fixed WebGL backdrop (the hero sphere returns here); edges fade into the black sections */
+.contact::before,.contact::after{content:"";position:absolute;left:0;right:0;height:180px;z-index:1;pointer-events:none}
+.contact::before{top:0;background:linear-gradient(#000,transparent)}
+.contact::after{bottom:0;background:linear-gradient(transparent,#000)}
+body:has(.contact:hover) .cursor-ring{opacity:0}   /* the WebGL lens is the cursor here */
 .contact .well{position:relative;z-index:2}
 .contact .eyebrow{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:34px}
 .contact h2{font-weight:400;font-size:clamp(44px,8vw,128px);line-height:.94;letter-spacing:-.035em}
 .contact h2 .ital{font-family:var(--ral);font-style:italic}
-.contact .email{display:inline-block;margin-top:46px;font-size:clamp(18px,2vw,26px);color:#fff;border-bottom:1px solid var(--border);padding-bottom:6px;transition:opacity .4s}
-.contact .email:hover{opacity:.6}
+.contact .email-wrap{position:relative;display:inline-block;margin-top:46px}
+.contact .email{font-size:clamp(18px,2vw,26px);color:#fff;border-bottom:1px solid var(--border);padding-bottom:6px;transition:border-color .4s}
+.contact .email:hover,.contact .email:focus-visible{background:var(--g-ocean);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;border-color:rgba(255,172,46,.6)}
+.contact .email-toast{position:absolute;left:50%;bottom:calc(100% + 12px);  /* above: the cursor label sits below the pointer */
+  translate:-50% 6px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:#a0e0ab;opacity:0;pointer-events:none;white-space:nowrap;transition:opacity .35s var(--ease),translate .35s var(--ease)}
+.contact .email-toast.show{opacity:1;translate:-50% 0}
+.vh{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .contact .socials{display:flex;gap:30px;justify-content:center;margin-top:60px;flex-wrap:wrap}
 .contact .socials a{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.62);transition:color .3s;display:inline-flex;align-items:center;gap:7px}
 .contact .socials a:hover{color:#fff}
@@ -475,6 +498,23 @@ body.cursor-view .cursor-ring{width:84px;height:84px}
   .contrib{grid-template-columns:repeat(auto-fill,minmax(12px,1fr));gap:3px}
   .footer .top{flex-direction:column;align-items:flex-start;gap:24px}
   .footer .meta{text-align:left}
+  .jrow::before{inset:0 -24px}   /* hover wash matches the 24px gutter (was -40px → 16px sideways scroll) */
+  .gh-stats{flex-wrap:wrap;gap:24px 36px}
+}
+
+/* very narrow phones (Galaxy Fold ~280px): links live in the menu; location tag would collide with the cue */
+@media(max-width:360px){
+  .nav .right .lnk,.hero .hello{display:none}
+}
+
+/* short landscape screens (phones on their side): fit the hero into one screen */
+@media(max-height:560px) and (orientation:landscape){
+  .nav{padding-top:14px;padding-bottom:14px}
+  .hero{height:auto;min-height:100svh;padding:84px 0 64px}
+  .hero .eyebrow{margin-bottom:14px}
+  .hero h1{font-size:min(12vw,19vh)}
+  .hero .sub{margin-top:16px;font-size:14px}
+  .scroll-cue,.hero .hello{bottom:22px}
 }
 
 /* two-column layout when article has TOC */

@@ -5,6 +5,18 @@
     <link rel="icon" type="image/svg+xml" href="/sm-logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0" />
     <title>Shamit Mishra</title>
+    <script>
+      // Sphere intro: decided before first paint so nothing flashes. Every load of home.
+      try {
+        if (location.pathname === '/' && !location.hash
+            && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          history.scrollRestoration = 'manual';   // a reload replays the intro from the top
+          scrollTo(0, 0);
+          document.documentElement.classList.add('intro');
+          window.__intro = 0;
+        }
+      } catch (e) {}
+    </script>
     <link rel="preconnect" href="https://api.fontshare.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

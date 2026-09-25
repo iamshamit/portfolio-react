@@ -74,9 +74,10 @@ export function Cursor() {
 
   React.useEffect(() => {
     if (window.matchMedia('(pointer:coarse)').matches) return;
-    let mx = innerWidth / 2, my = innerHeight / 2, rx = mx, ry = my, raf;
+    let mx = innerWidth / 2, my = innerHeight / 2, rx = mx, ry = my, raf, live = false;
     const onMove = (e) => {
       mx = e.clientX; my = e.clientY;
+      if (!live) { live = true; rx = mx; ry = my; document.body.classList.add('cursor-live'); }  // no fly-in from centre
       if (dot.current) dot.current.style.transform = `translate(${mx}px,${my}px) translate(-50%,-50%)`;
       if (label.current) label.current.style.transform = `translate(${mx}px,${my + 44}px) translate(-50%,-50%)`;
     };
@@ -88,8 +89,9 @@ export function Cursor() {
     const over = (e) => {
       const t = e.target.closest('a,button,.chip,.gcard,[data-cursor]');
       document.body.classList.toggle('cursor-hover', !!t);
-      const view = e.target.closest('[data-cursor="view"]');
+      const view = e.target.closest('[data-cursor="view"],[data-cursor-label]');
       document.body.classList.toggle('cursor-view', !!view);
+      if (view && label.current) label.current.textContent = view.dataset.cursorLabel || 'View';
     };
     addEventListener('mousemove', onMove);
     addEventListener('mouseover', over);

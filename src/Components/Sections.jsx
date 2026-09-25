@@ -1,6 +1,6 @@
 import React from 'react';
 import { PORTFOLIO } from '../data/config';
-import { Field, SMMark } from './Field';
+import { SMMark } from './Field';
 import { BlockRenderer, Toc, TocMobile } from './JournalBlocks';
 import { Link } from 'react-router-dom';
 
@@ -105,17 +105,62 @@ export function GitHub() {
 }
 
 export function Contact() {
+  const email = PORTFOLIO.contact.email;
+  const [copied, setCopied] = React.useState(false);
+  const timer = React.useRef();
+  const openMail = () => { window.location.href = `mailto:${email}`; };
+  const copy = () => {
+    if (!navigator.clipboard) return openMail();
+    navigator.clipboard.writeText(email).then(() => {
+      setCopied(true);
+      clearTimeout(timer.current);
+      timer.current = setTimeout(() => setCopied(false), 1800);
+    }, openMail);
+  };
+  React.useEffect(() => () => clearTimeout(timer.current), []);
+
+  // "Hold the portal": feed pointer / hovered link / clicks to the WebGL lens (fluid.js reads window.__lens)
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    const sec = ref.current;
+    const L = (window.__lens = { x: innerWidth / 2, y: innerHeight / 2, t: -1e9, el: null, ripple: 0 });
+    const move = (e) => {
+      const p = e.touches ? e.touches[0] : e;
+      L.x = p.clientX; L.y = p.clientY; L.t = performance.now();
+    };
+    const over = (e) => { if (e.pointerType === 'mouse') L.el = e.target.closest('.email, .socials a'); };
+    const leave = () => { L.el = null; };
+    const down = () => { L.ripple = performance.now(); };
+    sec.addEventListener('pointermove', move);
+    sec.addEventListener('touchstart', move, { passive: true });
+    sec.addEventListener('touchmove', move, { passive: true });
+    sec.addEventListener('pointerover', over);
+    sec.addEventListener('pointerleave', leave);
+    sec.addEventListener('pointerdown', down);
+    return () => {
+      sec.removeEventListener('pointermove', move);
+      sec.removeEventListener('touchstart', move);
+      sec.removeEventListener('touchmove', move);
+      sec.removeEventListener('pointerover', over);
+      sec.removeEventListener('pointerleave', leave);
+      sec.removeEventListener('pointerdown', down);
+    };
+  }, []);
+
   return (
-    <section className="contact" id="contact" data-screen-label="Contact">
-      <Field />
+    <section className="contact" id="contact" data-screen-label="Contact" ref={ref}>
       <div className="well">
         <div className="eyebrow reveal">Let&apos;s build something</div>
         <h2 className="reveal">
           Say <span className="ital">hello</span>.
         </h2>
-        <a className="email reveal" href={`mailto:${PORTFOLIO.contact.email}`} data-cursor="">
-          {PORTFOLIO.contact.email}
-        </a>
+        <div className="email-wrap reveal">
+          <button className="email" onClick={copy} data-cursor-label="Copy" aria-label={`Copy email address ${email}`}>
+            {email}
+          </button>
+          <span className={`email-toast${copied ? ' show' : ''}`} aria-hidden="true">Copied ✓</span>
+          <span className="vh" role="status">{copied ? 'Email address copied' : ''}</span>
+        </div>
         <div className="socials reveal" data-stagger="">
           {PORTFOLIO.contact.socials.map((s, i) => (
             <a key={i} href={s.href} target="_blank" rel="noreferrer">

@@ -6,7 +6,7 @@ import { useNavigate, useLocation, Routes, Route } from 'react-router-dom';
 import './App.css';
 import './index.css';
 import { PORTFOLIO } from './data/config';
-import { Cursor, HeroBackdrop, Nav, Overlay } from './Components/Field';
+import { Cursor, HeroBackdrop, Nav, Overlay, SMMark } from './Components/Field';
 import { Hero, Marquee, About } from './Components/Hero';
 import { Featured, Gallery } from './Components/Work';
 import { Skills, Timeline, GitHub, Journal, Article, Contact, Footer } from './Components/Sections';
@@ -20,6 +20,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 export default function App() {
   const [menu, setMenu] = React.useState(false);
+  const [intro] = React.useState(() => document.documentElement.classList.contains('intro'));
   // Initialise synchronously from URL so there's no flash on direct /blog/:slug load
   const [article, setArticle] = React.useState(() => {
     const m = window.location.pathname.match(/^\/blog\/(.+)/);
@@ -98,6 +99,11 @@ export default function App() {
     if (heroEl) {
       new IntersectionObserver((es) => { window.__heroInView = es[0].isIntersecting; }, { threshold: 0 }).observe(heroEl);
     }
+    // Contact is see-through onto the same backdrop; keep the sphere rendering while it's visible
+    const contactEl = document.getElementById('contact');
+    if (contactEl) {
+      new IntersectionObserver((es) => { window.__outroInView = es[0].isIntersecting; }, { threshold: 0 }).observe(contactEl);
+    }
 
     // Scroll reveals via IntersectionObserver
     const io = new IntersectionObserver((ents) => {
@@ -119,17 +125,50 @@ export default function App() {
       removeEventListener('scroll', onScroll);
     };
 
+    // Sphere intro (html.intro set pre-paint in index.html). fluid.js reads window.__intro 0→1:
+    // birth → swallow the screen → settle; the SM mark lives inside the newborn sphere.
+    const html = document.documentElement;
+    let introTl = null;
+    const skipEvents = ['wheel', 'touchmove', 'keydown', 'pointerdown'];
+    const scrollKeys = [' ', 'ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End'];
+    const skipIntro = (e) => {
+      if (e.type === 'wheel' || e.type === 'touchmove' || scrollKeys.includes(e.key)) e.preventDefault();
+      introTl.timeScale(6);
+    };
+    if (html.classList.contains('intro')) {
+      if (!window.__fluidOk) { html.classList.remove('intro'); window.__intro = 1; }
+      else {
+        const ball = { p: 0 };
+        introTl = gsap.timeline({ onComplete: () => {
+          skipEvents.forEach((t) => removeEventListener(t, skipIntro));
+          html.classList.remove('intro', 'intro-out');
+          gsap.set('.intro-mark', { display: 'none' });
+          if (lenis) lenis.start();
+          ScrollTrigger.refresh();
+        } });
+        introTl.to(ball, { p: 1, duration: 2.8, ease: 'none', onUpdate: () => { window.__intro = ball.p; } }, 0)
+          .fromTo('.intro-mark', { opacity: 0, scale: 0.7, filter: 'blur(10px)' },
+            { opacity: 1, scale: 1, filter: 'blur(0px)', duration: 0.8, ease: 'power3.out' }, 0.3)
+          .to('.intro-mark', { opacity: 0, scale: 2.4, filter: 'blur(16px)', duration: 0.55, ease: 'power2.in' }, 1.15)
+          .call(() => html.classList.replace('intro', 'intro-out'), null, 2.0);
+        if (lenis) lenis.stop();
+        skipEvents.forEach((t) => addEventListener(t, skipIntro, { passive: false }));
+      }
+    }
+
     // Hero intro animation
     const isMobile = matchMedia('(max-width:760px)').matches || matchMedia('(pointer:coarse)').matches;
     const heroTargets = '[data-hero-eyebrow],[data-hero-line],[data-hero-sub]';
-    const tl = gsap.timeline({ delay: 0.15 });
-    tl.from('[data-hero-eyebrow]', { yPercent: 120, opacity: 0, duration: 0.9, ease: 'power3.out' })
-      .from('[data-hero-line]', { yPercent: 118, opacity: 0, duration: 1.05, ease: 'power4.out', stagger: 0.12 }, '-=0.55')
-      .from('[data-hero-sub]', { yPercent: 100, opacity: 0, duration: 0.9, ease: 'power3.out' }, '-=0.65');
+    const tl = gsap.timeline({ delay: introTl ? 0 : 0.15 });
+    tl.fromTo('[data-hero-eyebrow]', { yPercent: 120, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.9, ease: 'power3.out' })
+      .fromTo('[data-hero-line]', { yPercent: 118, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 1.05, ease: 'power4.out', stagger: 0.12 }, '-=0.55')
+      .fromTo('[data-hero-sub]', { yPercent: 100, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.9, ease: 'power3.out' }, '-=0.65');
+    if (introTl) introTl.add(tl, 1.9);
     const ensureVisible = () => gsap.set(heroTargets, { opacity: 1, yPercent: 0, clearProps: 'transform,opacity' });
+    const finishIntro = () => { if (introTl) introTl.progress(1); ensureVisible(); };
     tl.eventCallback('onComplete', ensureVisible);
-    setTimeout(ensureVisible, 3200);
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(ensureVisible, 1600); });
+    setTimeout(finishIntro, introTl ? 5000 : 3200);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) setTimeout(finishIntro, 1600); });
 
     // Ambient blob sine loops
     const amb = [
@@ -188,6 +227,12 @@ export default function App() {
       });
     }
 
+    // Outro: as Contact scrolls in, the sphere becomes a cursor-held lens in a darkened world (read by fluid.js)
+    ScrollTrigger.create({
+      trigger: '#contact', start: 'top bottom', end: 'center center',
+      onUpdate: (self) => { window.__outro = self.progress; },
+    });
+
     // Marquee drift + scroll velocity
     const mq = document.querySelector('[data-marquee]');
     if (mq) {
@@ -207,6 +252,7 @@ export default function App() {
     return () => {
       document.removeEventListener('click', onAnchorClick);
       removeEventListener('scroll', onScroll);
+      skipEvents.forEach((t) => removeEventListener(t, skipIntro));
       ScrollTrigger.getAll().forEach((st) => st.kill());
       if (lenis) lenis.destroy();
     };
@@ -219,6 +265,7 @@ export default function App() {
     <>
       <Cursor />
       <HeroBackdrop />
+      {intro && <div className="intro-mark" aria-hidden="true"><SMMark size={80} /></div>}
       <div className="grain" />
       <div className="progress" data-progress="" />
       {!isJournal && <Nav onOpen={() => setMenu(true)} />}
