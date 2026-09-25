@@ -36,7 +36,12 @@
   uniform vec2  u_stretch;  // outro lens: squash-and-stretch along travel (aspect-corrected dir * amount)
   uniform float u_ripple;   // outro lens: click ripple age 0..1, <0 = none
 
+  #ifdef MOBILE
+  // Hoskins hash12: small multipliers keep it stable under mobile GPU rounding (the desktop hash seams noise cells on phones)
+  float hash(vec2 p){ vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
+  #else
   float hash(vec2 p){ p = fract(p*vec2(123.34,456.21)); p += dot(p, p+45.32); return fract(p.x*p.y); }
+  #endif
   float noise(vec2 p){
     vec2 i = floor(p), f = fract(p);
     float a = hash(i), b = hash(i+vec2(1.,0.)), c = hash(i+vec2(0.,1.)), d = hash(i+vec2(1.,1.));
@@ -143,7 +148,8 @@
 
     const prog = gl.createProgram();
     gl.attachShader(prog, compile(gl, gl.VERTEX_SHADER, VERT));
-    gl.attachShader(prog, compile(gl, gl.FRAGMENT_SHADER, FRAG));
+    gl.attachShader(prog, compile(gl, gl.FRAGMENT_SHADER,
+      (matchMedia('(pointer:coarse)').matches ? '#define MOBILE\n' : '') + FRAG));
     gl.linkProgram(prog); gl.useProgram(prog);
     global.__fluidOk = true;   // App only plays the sphere intro when this is set
 
@@ -162,13 +168,12 @@
 
     const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
     const mobile = matchMedia('(max-width:760px)').matches || matchMedia('(pointer:coarse)').matches;
-    // ponytail: phones render ~1 buffer px per css px; 0.55 (old) was visibly pixelated on 3x screens. Drop back if low-end phones stutter.
-    const SCALE = mobile ? 0.7 : 0.72;   // render below css size
+    const SCALE = mobile ? 0.5 : 0.72;   // render below css size; lighter on phones
     let W = 1, H = 1;
     function syncSize(){
       const cw = canvas.clientWidth, ch = canvas.clientHeight;
       if(cw < 1 || ch < 1) return;
-      const dpr = Math.min(devicePixelRatio || 1, mobile ? 1.5 : 1.4);
+      const dpr = Math.min(devicePixelRatio || 1, mobile ? 1.1 : 1.4);
       const nw = Math.max(2, Math.floor(cw * dpr * SCALE));
       const nh = Math.max(2, Math.floor(ch * dpr * SCALE));
       if(nw !== W || nh !== H){ W = nw; H = nh; canvas.width = W; canvas.height = H; gl.viewport(0,0,W,H); }
