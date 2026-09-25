@@ -58,6 +58,7 @@
   vec3 field(vec2 uv, float t, vec2 m){
     vec2 p = (uv - 0.5);
     p.x *= u_aspect;
+    p *= max(1.0, 0.9 / u_aspect);   // portrait: zoom out so forms keep landscape density (no-op on laptops)
     p = p*0.92 + m*0.16;
     float t2 = t * 0.85;
     vec2 q = vec2( fbm(p + vec2(0.0, t2)),
@@ -168,12 +169,12 @@
 
     const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
     const mobile = matchMedia('(max-width:760px)').matches || matchMedia('(pointer:coarse)').matches;
-    const SCALE = mobile ? 0.5 : 0.72;   // render below css size; lighter on phones
+    const SCALE = mobile ? 0.6 : 0.72;   // render below css size; lighter on phones
     let W = 1, H = 1;
     function syncSize(){
       const cw = canvas.clientWidth, ch = canvas.clientHeight;
       if(cw < 1 || ch < 1) return;
-      const dpr = Math.min(devicePixelRatio || 1, mobile ? 1.1 : 1.4);
+      const dpr = Math.min(devicePixelRatio || 1, mobile ? 1.5 : 1.4);   // phones ≈0.9 buffer px per css px: sharp contact lens edge
       const nw = Math.max(2, Math.floor(cw * dpr * SCALE));
       const nh = Math.max(2, Math.floor(ch * dpr * SCALE));
       if(nw !== W || nh !== H){ W = nw; H = nh; canvas.width = W; canvas.height = H; gl.viewport(0,0,W,H); }
@@ -210,12 +211,14 @@
       const driftY = Math.sin(time * 0.23 + 1.0) * 0.018;    // ~±20px @1080h
       const breathe = 1.0 + (Math.sin(time * 0.34) * 0.5 + 0.5) * 0.05; // 1.00→1.05, ~18s
 
+      // portrait: radius is in height units, so shrink it to ~1.1× screen width and lift it off the headline (1 on laptops)
+      const fit = Math.min(1, W / H / 0.9);
       let sphX = 0.72 - mx * 0.045 + driftX;
-      let sphY = 0.46 + my * 0.05  + driftY;
-      let sphR = 0.5 * breathe;
+      let sphY = 0.46 + my * 0.05  + driftY + (1 - fit) * 0.3;
+      let sphR = 0.5 * breathe * fit;
 
       // scroll phases: 30-60% enlarge · 60-100% drift away
-      sphR += smooth(0.3, 0.62, sc) * 0.17;
+      sphR += smooth(0.3, 0.62, sc) * 0.17 * fit;
       const away = smooth(0.6, 1.0, sc);
       sphX += away * 0.5;
       sphY -= away * 0.16;
@@ -249,7 +252,7 @@
       let stretchX = 0, stretchY = 0, ripple = -1;
       if(op > 0){
         const L = window.__lens || {};
-        let gx, gy, gr = 0.13;
+        let gx, gy, gr = 0.13 * fit;
         if(L.el){                                                     // snap onto the hovered link, swell to cover it
           const b = L.el.getBoundingClientRect();
           gx = (b.left + b.width / 2) / innerWidth; gy = 1 - (b.top + b.height / 2) / innerHeight;
