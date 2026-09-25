@@ -10,7 +10,8 @@ import React, { useLayoutEffect, useRef, useState } from 'react';
 
 const DM = "'DM Sans', sans-serif";
 const SG = "'Space Grotesk', sans-serif";
-const CG = "'Cormorant Garamond', serif";
+const GS = "'General Sans', sans-serif";   // this site's own pair
+const RAL = "'Raleway', serif";
 const FC = "'Fira Code', monospace";
 
 const CANVAS_W = 1250;
@@ -225,33 +226,38 @@ export function PortfolioPage() {
       <div style={{ position:'absolute', right:'-60px', top:'100px', width:'480px', height:'480px', borderRadius:'50%', background:'radial-gradient(circle, rgba(200,158,38,0.65) 0%, transparent 62%)', filter:'blur(52px)', opacity:0.5 }} />
       <div style={{ position:'absolute', left:'-80px', top:'220px', width:'380px', height:'380px', borderRadius:'50%', background:'radial-gradient(circle, rgba(100,80,20,0.55) 0%, transparent 62%)', filter:'blur(58px)', opacity:0.4 }} />
       <div style={{ position:'absolute', right:'100px', bottom:'-80px', width:'300px', height:'300px', borderRadius:'50%', background:'radial-gradient(circle, rgba(180,140,30,0.4) 0%, transparent 65%)', filter:'blur(60px)' }} />
+      {/* glass sphere */}
+      <div style={{ position:'absolute', right:'-120px', top:'40px', width:'700px', height:'700px', borderRadius:'50%',
+        background:'radial-gradient(circle at 36% 30%, rgba(255,240,200,0.16), transparent 30%), radial-gradient(circle at 60% 65%, rgba(160,224,171,0.22), rgba(40,34,10,0.35) 70%)',
+        boxShadow:'inset 0 0 0 2px rgba(255,214,120,0.55), inset 0 0 90px rgba(0,0,0,0.45)' }} />
+      <div style={{ position:'absolute', right:'370px', top:'150px', width:'38px', height:'38px', borderRadius:'50%', background:'radial-gradient(circle, rgba(255,236,190,0.9), transparent 70%)', filter:'blur(4px)' }} />
 
       {/* nav */}
       <div style={{ position:'absolute', top:0, left:0, right:0, height:'68px', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 54px', zIndex:10 }}>
-        <div style={{ fontFamily:DM, fontSize:'21px', fontWeight:700, lineHeight:1 }}>
-          <span style={{ color:'#c9a84c' }}>S</span><span style={{ color:'#fff' }}>M</span>
+        <div style={{ fontFamily:GS, fontSize:'24px', fontWeight:500, lineHeight:1 }}>
+          <span style={{ color:'#ffac2e' }}>S</span><span style={{ color:'#fff' }}>M</span>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:'9px' }}>
-          <div className="blink-dot" style={{ width:'8px', height:'8px', borderRadius:'50%', background:'#22c55e' }} />
-          <span style={{ fontFamily:DM, fontSize:'13px', letterSpacing:'2.5px', textTransform:'uppercase', color:'rgba(255,255,255,0.45)' }}>Open to Work</span>
+          <div className="blink-dot" style={{ width:'8px', height:'8px', borderRadius:'50%', background:'#49c5b6' }} />
+          <span style={{ fontFamily:GS, fontSize:'13px', letterSpacing:'2.5px', textTransform:'uppercase', color:'rgba(255,255,255,0.45)' }}>Open to Work</span>
         </div>
-        <div style={{ display:'flex', gap:'28px', fontFamily:DM, fontSize:'14px', letterSpacing:'1.5px', textTransform:'uppercase', color:'rgba(255,255,255,0.55)' }}>
+        <div style={{ display:'flex', gap:'28px', fontFamily:GS, fontSize:'14px', letterSpacing:'1.5px', textTransform:'uppercase', color:'rgba(255,255,255,0.55)' }}>
           <span>Work</span><span>Journal</span><span>Contact</span><span>—</span>
         </div>
       </div>
 
       {/* main text */}
       <div style={{ position:'absolute', left:'54px', top:'138px' }}>
-        <div style={{ fontFamily:DM, fontSize:'14px', letterSpacing:'3.5px', textTransform:'uppercase', color:'rgba(255,255,255,0.38)', marginBottom:'14px' }}>Computer Scientist · Engineer · Builder</div>
-        <div style={{ fontFamily:CG, fontSize:'152px', fontWeight:300, color:'#fff', lineHeight:0.88 }}>Shamit</div>
-        <div style={{ fontFamily:CG, fontSize:'152px', fontWeight:300, fontStyle:'italic', color:'#fff', lineHeight:0.9, marginBottom:'30px' }}>Mishra.</div>
-        <div style={{ fontFamily:DM, fontSize:'17px', color:'rgba(255,255,255,0.5)', lineHeight:1.72, maxWidth:'440px' }}>I design and build modern web applications, resilient backend systems, and AI-powered products — engineering experiences that connect, compute, and inspire.</div>
+        <div style={{ fontFamily:GS, fontSize:'14px', letterSpacing:'3.5px', textTransform:'uppercase', color:'rgba(255,255,255,0.6)', marginBottom:'22px' }}>Computer Scientist · Engineer · Builder</div>
+        <div style={{ fontFamily:GS, fontSize:'150px', fontWeight:400, letterSpacing:'-0.03em', color:'#fff', lineHeight:0.92 }}>Shamit</div>
+        <div style={{ fontFamily:RAL, fontSize:'150px', fontWeight:400, fontStyle:'italic', letterSpacing:'-0.03em', color:'#fff', lineHeight:0.92, marginBottom:'34px' }}>Mishra.</div>
+        <div style={{ fontFamily:GS, fontSize:'17px', color:'rgba(255,255,255,0.7)', lineHeight:1.6, maxWidth:'460px' }}>I design and build modern web applications, resilient backend systems, and AI-powered products — engineering experiences that connect, compute, and inspire.</div>
       </div>
 
       {/* scroll label */}
       <div style={{ position:'absolute', bottom:'36px', left:'54px', display:'flex', alignItems:'center', gap:'12px' }}>
         <div style={{ width:'38px', height:'1px', background:'rgba(255,255,255,0.25)' }} />
-        <span style={{ fontFamily:DM, fontSize:'11px', letterSpacing:'2.5px', textTransform:'uppercase', color:'rgba(255,255,255,0.28)' }}>Scroll to Explore</span>
+        <span style={{ fontFamily:GS, fontSize:'11px', letterSpacing:'2.5px', textTransform:'uppercase', color:'rgba(255,255,255,0.5)' }}>Scroll to Explore</span>
       </div>
 
       {/* location */}
@@ -480,14 +486,23 @@ export function PastaPage() {
 
         {/* editor body */}
         <div style={{ flex:1, padding:'26px 22px', background:'#0d0d16' }}>
-          <span style={{ fontFamily:FC, fontSize:'17px', color:'rgba(255,255,255,0.18)' }}>Type your markdown here...</span>
+          <pre style={{ margin:0, fontFamily:FC, fontSize:'17px', lineHeight:1.8, color:'rgba(255,255,255,0.78)', whiteSpace:'pre-wrap' }}>
+            <span style={{ color:'#7aa2f7' }}># deploy notes</span>{'\n\n'}
+            {'- rotate the '}<span style={{ color:'#e0af68' }}>**staging key**</span>{' before friday\n'}
+            {'- bump node to 20 in the '}<span style={{ color:'#9ece6a' }}>`Dockerfile`</span>{'\n\n'}
+            <span style={{ color:'rgba(255,255,255,0.35)' }}>```bash</span>{'\n'}
+            {'docker compose up -d --build\n'}
+            <span style={{ color:'rgba(255,255,255,0.35)' }}>```</span>{'\n\n'}
+            <span style={{ color:'rgba(255,255,255,0.4)' }}>{'> expires in 24h · share link below'}</span>
+            <span className="cursor-blink" />
+          </pre>
         </div>
 
         {/* bottom bar */}
         <div style={{ display:'flex', alignItems:'stretch', borderTop:'1px solid rgba(255,255,255,0.055)', background:'#0a0a12', flexShrink:0 }}>
           <div style={{ flex:1, padding:'18px 22px', fontFamily:FC, fontSize:'16px', color:'rgba(255,255,255,0.2)' }}>Edit code</div>
           <div style={{ padding:'18px 20px', fontFamily:DM, fontSize:'16px', color:'rgba(255,255,255,0.18)', borderLeft:'1px solid rgba(255,255,255,0.055)', borderRight:'1px solid rgba(255,255,255,0.055)' }}>/ |</div>
-          <div style={{ flex:1, padding:'18px 22px', fontFamily:FC, fontSize:'16px', color:'rgba(255,255,255,0.2)' }}>url (optional)</div>
+          <div style={{ flex:1, padding:'18px 22px', fontFamily:FC, fontSize:'16px', color:'rgba(255,255,255,0.7)' }}>deploy-notes</div>
           <div style={{ padding:'18px 26px', background:'rgba(255,255,255,0.05)', fontFamily:DM, fontSize:'16px', color:'rgba(255,255,255,0.65)', fontWeight:600, borderLeft:'1px solid rgba(255,255,255,0.055)' }}>Go</div>
         </div>
 
@@ -539,7 +554,21 @@ export function FmhyPage() {
         {/* main content */}
         <div style={{ flex:1, display:'flex', padding:'40px 50px', gap:'60px', background:'#1a1f2e', minHeight:0 }}>
           <div style={{ flex:1, minWidth:0 }}>
-            <p style={{ fontFamily:DM, fontSize:'18px', color:'rgba(255,255,255,0.65)', lineHeight:1.75, margin:0 }}>Search the Free Media Heck Yeah database</p>
+            <p style={{ fontFamily:DM, fontSize:'18px', color:'rgba(255,255,255,0.65)', lineHeight:1.75, margin:'0 0 26px' }}>Search the Free Media Heck Yeah database</p>
+            <div style={{ background:'#0d1117', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'12px', overflow:'hidden' }}>
+              <div style={{ padding:'18px 22px', fontFamily:DM, fontSize:'22px', color:'#fff', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+                <span style={{ color:'#3b82f6' }}>fmhy </span>linux distros<span className="cursor-blink" />
+              </div>
+              {[['Linux Distros', 'Linux / macOS › Linux Distros'], ['Linux Apps', 'Linux / macOS › Linux Apps'], ['Linux Gaming', 'Gaming › Linux Gaming'], ['Linux Adblocking', 'Adblocking / Privacy › Linux']].map(([t, p], i) => (
+                <div key={t} style={{ display:'flex', alignItems:'center', gap:'16px', padding:'14px 22px', background: i === 0 ? 'rgba(59,130,246,0.14)' : 'transparent' }}>
+                  <div style={{ width:'30px', height:'30px', borderRadius:'7px', background:'#1e2a4a', flexShrink:0 }} />
+                  <div>
+                    <div style={{ fontFamily:DM, fontSize:'17px', color:'#fff' }}>{t}</div>
+                    <div style={{ fontFamily:DM, fontSize:'13px', color:'rgba(255,255,255,0.4)', marginTop:'2px' }}>{p}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
           <div style={{ flex:'0 0 400px' }}>
             <div style={{ fontFamily:DM, fontSize:'12px', color:'rgba(255,255,255,0.38)', textTransform:'uppercase', letterSpacing:'2px', marginBottom:'10px' }}>Install</div>

@@ -168,7 +168,8 @@
                 stretch:U('u_stretch'), ripple:U('u_ripple') };
 
     const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
-    const mobile = matchMedia('(max-width:760px)').matches || matchMedia('(pointer:coarse)').matches;
+    const touch = matchMedia('(pointer:coarse)').matches;
+    const mobile = matchMedia('(max-width:760px)').matches || touch;
     const SCALE = mobile ? 0.6 : 0.72;   // render below css size; lighter on phones
     let W = 1, H = 1;
     function syncSize(){
@@ -260,7 +261,9 @@
         } else if(now - (L.t || -1e9) < 2500){                        // follow the pointer
           gx = L.x / innerWidth; gy = 1 - L.y / innerHeight;
         } else {                                                      // idle: wander around the headline
-          gx = 0.5 + 0.26 * Math.sin(time * 0.45); gy = 0.52 + 0.14 * Math.sin(time * 0.62 + 1.0);
+          gx = 0.5 + 0.26 * Math.sin(time * 0.45);
+          gy = touch ? 0.15 + 0.04 * Math.sin(time * 0.62 + 1.0)    // touch: drift in the empty band under the links, not over them
+                     : 0.52 + 0.14 * Math.sin(time * 0.62 + 1.0);
         }
         if(L.ripple && L.ripple !== lastRipple){ lastRipple = L.ripple; lvr += 0.035; }   // click: jelly kick
         const damp = Math.pow(0.82, f);

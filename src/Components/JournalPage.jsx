@@ -18,7 +18,7 @@ export default function JournalPage({ openArticle }) {
         <header className="ji-header">
           <div className="ji-eyebrow">Journal</div>
           <h1 className="ji-title">All writing.</h1>
-          <p className="ji-sub">{PORTFOLIO.journal.length} entries</p>
+          <p className="ji-sub">{PORTFOLIO.journal.length} {PORTFOLIO.journal.length === 1 ? 'entry' : 'entries'}</p>
         </header>
 
         <div className="filters">

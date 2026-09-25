@@ -17,11 +17,6 @@ export const PORTFOLIO = {
       "From pixel-precise interfaces to distributed systems that stay calm under load, I build across the whole stack and lately, the intelligence layer that sits on top of it.",
       "Curious by default and collaborative by nature, I care about the seams: the moment data becomes interface, the millisecond a request resolves, the feeling a product leaves behind.",
     ],
-    stats: [
-      { n: "25+", l: "Repos shipped" },
-      { n: "6+", l: "Core languages" },
-      { n: "∞", l: "Commits & counting" },
-    ],
   },
 
   featured: [
@@ -81,22 +76,23 @@ export const PORTFOLIO = {
   skills: [
     { group: "Languages", items: ["TypeScript", "Python", "Go", "JavaScript", "Java", "SQL"] },
     { group: "Frontend", items: ["React", "Next.js", "GSAP", "Three.js", "Tailwind"] },
-    { group: "Backend", items: ["Node.js", "Hono.js", "Redis"] },
+    { group: "Backend", items: ["Node.js", "Express", "Hono.js", "MongoDB", "Redis"] },
     { group: "Infra", items: ["Docker", "AWS", "CI / CD"] },
   ],
 
   timeline: [
-    { when: "2025  Present", what: "Backend & API Developer Intern", where: "R2E Technologies Pvt. Ltd.", note: "Building backend services and REST APIs for IoT and fleet tracking products at a product-focused startup." },
-    { when: "2020  2026", what: "B.Tech Computer Science & Engineering", where: "GIET, Rayagada, Odisha", note: "Computer Science & Engineering with focus on full-stack development, distributed systems, and software engineering fundamentals." },
+    { when: "2025 – Present", what: "Backend & API Developer Intern", where: "R2E Technologies Pvt. Ltd.", note: "Building backend services and REST APIs for IoT and fleet tracking products at a product-focused startup." },
+    { when: "2020 – 2026", what: "B.Tech Computer Science & Engineering", where: "GIET, Rayagada, Odisha", note: "Computer Science & Engineering with focus on full-stack development, distributed systems, and software engineering fundamentals." },
   ],
 
   github: {
     handle: "@iamshamit",
     blurb: "Most of my work is open. Components, experiments, and the occasional weekend rabbit hole.",
     stats: [
-      { n: "25+", l: "Repositories" },
-      { n: "100+", l: "Contributions / yr" },
-      { n: "10+", l: "Stars earned" },
+      // fallbacks; GitHub() swaps in live numbers on load
+      { key: "repos", n: "17", l: "Public repos" },
+      { key: "contrib", n: "2,198", l: "Contributions / yr" },
+      { key: "stars", n: "22", l: "Stars earned" },
     ],
   },
 
@@ -105,8 +101,6 @@ export const PORTFOLIO = {
     socials: [
       { label: "GitHub", href: "https://github.com/iamshamit" },
       { label: "LinkedIn", href: "https://linkedin.com/in/iamshamit" },
-      { label: "Resume", href: "#" },
-      { label: "Email", href: "mailto:shamitmishra22@gmail.com" },
     ],
   },
 

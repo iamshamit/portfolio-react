@@ -186,7 +186,7 @@ export default function App() {
     // Pin hero (desktop only)
     if (!isMobile) {
       const heroTl = gsap.timeline({ scrollTrigger: {
-        trigger: '.hero', start: 'top top', end: '+=200%', pin: true, scrub: 1,
+        trigger: '.hero', start: 'top top', end: '+=130%', pin: true, scrub: 1,
         anticipatePin: 1, invalidateOnRefresh: true,
         onUpdate: (self) => { window.__heroScroll = self.progress; },
       }});
@@ -239,7 +239,8 @@ export default function App() {
       gsap.to(mq, { xPercent: -33.33, duration: 18, ease: 'none', repeat: -1 });
       ScrollTrigger.create({
         trigger: '.marquee', start: 'top bottom', end: 'bottom top',
-        onUpdate: (self) => { gsap.set(mq, { rotate: self.getVelocity() * -0.0008 }); },
+        // tilt the band, not the multi-screen track: rotating the track dipped its far ends out of the band
+        onUpdate: (self) => { gsap.set('.marquee', { rotate: gsap.utils.clamp(-1, 1, self.getVelocity() * -0.0004) }); },
       });
     }
 

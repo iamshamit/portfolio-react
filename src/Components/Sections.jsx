@@ -9,7 +9,7 @@ export function Skills() {
     <section className="section" id="skills" data-screen-label="Skills">
       <div className="well">
         <div className="sec-head">
-          <div className="idx"><span className="bar" />04 — Capabilities</div>
+          <div className="idx"><span className="bar" />Capabilities</div>
           <h2 className="reveal">The toolkit.</h2>
           <div className="note">Frontend → Backend → AI</div>
         </div>
@@ -33,7 +33,7 @@ export function Timeline() {
     <section className="section" id="experience" data-screen-label="Experience">
       <div className="well">
         <div className="sec-head">
-          <div className="idx"><span className="bar" />05 — Path</div>
+          <div className="idx"><span className="bar" />Path</div>
           <h2 className="reveal">Experience & education.</h2>
           <div className="note">Most recent first</div>
         </div>
@@ -54,18 +54,37 @@ export function Timeline() {
   );
 }
 
+const GH_USER = 'iamshamit';
+const HEAT_DAYS = 26 * 7;   // last 26 weeks: one column per week
+const HEAT = ['rgba(255,255,255,.06)', 'rgba(255,172,46,.28)', 'rgba(255,172,46,.5)', 'rgba(255,172,46,.72)', 'rgba(255,172,46,.95)'];
+
+// Live GitHub data. Config stats stay on screen until (and unless) these resolve.
+function useGitHubLive() {
+  const [live, setLive] = React.useState({});
+  React.useEffect(() => {
+    let on = true;
+    const get = (u) => fetch(u).then((r) => (r.ok ? r.json() : Promise.reject(r.status)));
+    get(`https://github-contributions-api.jogruber.de/v4/${GH_USER}?y=last`)
+      .then((d) => on && setLive((l) => ({ ...l, days: d.contributions.slice(-HEAT_DAYS), contrib: d.total.lastYear })))
+      .catch(() => {});
+    get(`https://api.github.com/users/${GH_USER}/repos?per_page=100`)
+      .then((rs) => on && setLive((l) => ({ ...l, repos: rs.length, stars: rs.reduce((s, r) => s + r.stargazers_count, 0) })))
+      .catch(() => {});
+    return () => { on = false; };
+  }, []);
+  return live;
+}
+
 export function GitHub() {
   const g = PORTFOLIO.github;
-  const cells = Array.from({ length: 120 }, (_, i) => {
-    const v = (Math.sin(i * 12.9898) * 43758.5453);
-    return v - Math.floor(v);
-  });
+  const live = useGitHubLive();
+  const stat = (s) => (live[s.key] != null ? live[s.key].toLocaleString('en-IN') : s.n);
 
   return (
     <section className="section github" id="github" data-screen-label="GitHub">
       <div className="well">
         <div className="sec-head">
-          <div className="idx"><span className="bar" />06 — Open Source</div>
+          <div className="idx"><span className="bar" />Open Source</div>
           <div className="note">{g.handle}</div>
         </div>
         <div className="gh-inner">
@@ -75,7 +94,7 @@ export function GitHub() {
             <div className="gh-stats" data-stagger="">
               {g.stats.map((s, i) => (
                 <div key={i}>
-                  <div className="n">{s.n}</div>
+                  <div className="n">{stat(s)}</div>
                   <div className="l">{s.l}</div>
                 </div>
               ))}
@@ -84,20 +103,19 @@ export function GitHub() {
               View GitHub <span>→</span>
             </a>
           </div>
-          <div className="gh-r reveal">
-            <div className="contrib" ref={(el) => {
-              if (!el) return;
-              [...el.children].forEach((c, i) => {
-                const a = cells[i];
-                c.style.background = a > 0.78
-                  ? `rgba(255,172,46,${0.35 + a * 0.55})`
-                  : a > 0.5 ? `rgba(160,224,171,${0.18 + a * 0.3})`
-                  : `rgba(255,255,255,${0.05 + a * 0.07})`;
-              });
-            }}>
-              {cells.map((_, i) => <i key={i} />)}
+          <figure className="gh-r reveal">
+            {/* real contributions; the grid keeps its footprint while loading so nothing jumps */}
+            <div className="contrib" role="img" aria-label={live.contrib != null ? `${live.contrib} GitHub contributions in the last year` : 'GitHub contributions, loading'}>
+              {Array.from({ length: HEAT_DAYS }, (_, i) => {
+                const d = live.days?.[i];
+                return <i key={i} style={{ background: HEAT[d ? d.level : 0] }} title={d ? `${d.count} on ${d.date}` : undefined} />;
+              })}
             </div>
-          </div>
+            <figcaption className="contrib-cap">
+              <span>Last 26 weeks · live from GitHub</span>
+              <span className="contrib-key" aria-hidden="true">Less {HEAT.map((c) => <i key={c} style={{ background: c }} />)} More</span>
+            </figcaption>
+          </figure>
         </div>
       </div>
     </section>
@@ -202,9 +220,9 @@ export function Journal({ onOpen }) {
     <section className="section" id="journal" data-screen-label="Journal">
       <div className="well">
         <div className="sec-head">
-          <div className="idx"><span className="bar" />07 — Journal</div>
+          <div className="idx"><span className="bar" />Journal</div>
           <h2 className="reveal">Notes &amp; writing.</h2>
-          <div className="note">{PORTFOLIO.journal.length} entries</div>
+          <div className="note">{PORTFOLIO.journal.length} {PORTFOLIO.journal.length === 1 ? 'entry' : 'entries'}</div>
         </div>
         <div className="journal reveal" data-stagger="">
           {shown.map((post) => (

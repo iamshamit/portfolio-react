@@ -112,7 +112,7 @@ export function Featured() {
     <section className="featured" id="work">
       <div className="well" style={{ paddingTop: '150px' }}>
         <div className="sec-head">
-          <div className="idx"><span className="bar" />02 — Selected Work</div>
+          <div className="idx"><span className="bar" />Selected Work</div>
           <h2 className="reveal">Things I built that move.</h2>
           <div className="note">{PORTFOLIO.featured.length} featured · {new Date().getFullYear()}</div>
         </div>
@@ -128,7 +128,7 @@ export function Gallery() {
       <div className="gallery-sticky">
         <div className="gallery-track" data-gallery-track="">
           <div className="gallery-intro">
-            <div className="idx">03 — More</div>
+            <div className="idx">More</div>
             <h2>And a few more.</h2>
             <p>Side projects, experiments, and tools. Drag or scroll →</p>
           </div>

@@ -54,7 +54,7 @@ export function About() {
     <section className="section" id="about" data-screen-label="About">
       <div className="well">
         <div className="sec-head">
-          <div className="idx"><span className="bar" />01 — About</div>
+          <div className="idx"><span className="bar" />About</div>
           <div className="note">{PORTFOLIO.role}</div>
         </div>
         <div className="about">
@@ -69,14 +69,6 @@ export function About() {
           <div className="col-r">
             <div className="body reveal">
               {a.body.map((p, i) => <p key={i}>{p}</p>)}
-            </div>
-            <div className="stats reveal" data-stagger="">
-              {a.stats.map((s, i) => (
-                <div key={i}>
-                  <div className="n">{s.n}</div>
-                  <div className="l">{s.l}</div>
-                </div>
-              ))}
             </div>
           </div>
         </div>
