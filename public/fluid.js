@@ -162,12 +162,13 @@
 
     const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
     const mobile = matchMedia('(max-width:760px)').matches || matchMedia('(pointer:coarse)').matches;
-    const SCALE = mobile ? 0.5 : 0.72;   // render below css size; lighter on phones
+    // ponytail: phones render ~1 buffer px per css px; 0.55 (old) was visibly pixelated on 3x screens. Drop back if low-end phones stutter.
+    const SCALE = mobile ? 0.7 : 0.72;   // render below css size
     let W = 1, H = 1;
     function syncSize(){
       const cw = canvas.clientWidth, ch = canvas.clientHeight;
       if(cw < 1 || ch < 1) return;
-      const dpr = Math.min(devicePixelRatio || 1, mobile ? 1.1 : 1.4);
+      const dpr = Math.min(devicePixelRatio || 1, mobile ? 1.5 : 1.4);
       const nw = Math.max(2, Math.floor(cw * dpr * SCALE));
       const nh = Math.max(2, Math.floor(ch * dpr * SCALE));
       if(nw !== W || nh !== H){ W = nw; H = nh; canvas.width = W; canvas.height = H; gl.viewport(0,0,W,H); }
