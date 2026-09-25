@@ -97,7 +97,7 @@ export const PORTFOLIO = {
   },
 
   contact: {
-    email: "shamitmishra22@gmail.com",
+    email: "shamitmishra.work@gmail.com",
     socials: [
       { label: "GitHub", href: "https://github.com/iamshamit" },
       { label: "LinkedIn", href: "https://linkedin.com/in/iamshamit" },
