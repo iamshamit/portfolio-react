@@ -711,6 +711,17 @@ kbd{font-family:'Fira Code',ui-monospace,monospace;font-size:11px;padding:1px 6p
   .note-bubble{border-radius:18px 18px 18px 5px;transform-origin:0 100%}
 }
 
-/* no native page scrollbar: its grey gutter broke the edge-to-edge background (the top progress bar shows position) */
+/* native page scrollbar hidden (its grey gutter broke the edge-to-edge background); .sbar replaces it */
 html{scrollbar-width:none}
 html::-webkit-scrollbar{display:none}
+
+/* overlay scrollbar: glass thumb, no track */
+.sbar{position:fixed;top:8px;right:3px;bottom:8px;width:12px;z-index:75;cursor:default;opacity:0;transition:opacity .45s var(--ease)}
+.sbar.on,.sbar:hover{opacity:1}
+.sbar i{position:absolute;top:0;right:2px;width:5px;border-radius:6px;will-change:transform;
+  background:rgba(255,255,255,.28);box-shadow:0 0 0 1px rgba(0,0,0,.25);backdrop-filter:blur(6px);
+  transition:width .25s var(--ease),right .25s var(--ease),background .25s}
+.sbar:hover i,.sbar.drag i{width:8px;right:1px;background:rgba(255,172,46,.75)}
+@media(pointer:fine){ .sbar,.sbar i{cursor:none} }   /* the custom cursor ring already marks the pointer */
+@media(pointer:coarse){ .sbar{pointer-events:none;width:6px} .sbar i{width:3px;right:1px} }
+html.intro .sbar,html.menu-open .sbar{visibility:hidden}

@@ -69,6 +69,59 @@ export function HeroAtmosphere() {
   );
 }
 
+// Overlay scrollbar (the native one is hidden: its gutter broke the edge-to-edge background).
+// A glass thumb with no track; shows while scrolling or when the pointer nears the right edge; drag it or click the rail.
+export function ScrollBar() {
+  const rail = React.useRef(null), thumb = React.useRef(null);
+  React.useEffect(() => {
+    const r = rail.current, th = thumb.current, h = document.documentElement;
+    let hideT, dragging = false, grab = 0;
+    const metrics = () => {
+      const max = h.scrollHeight - innerHeight, railH = r.clientHeight;
+      const size = Math.max(36, railH * innerHeight / h.scrollHeight);
+      return { max, railH, size, room: railH - size };
+    };
+    const place = () => {
+      const { max, size, room } = metrics();
+      r.hidden = max <= 1;
+      th.style.height = size + 'px';
+      th.style.transform = `translateY(${(max > 0 ? scrollY / max : 0) * room}px)`;
+    };
+    const show = () => {
+      r.classList.add('on');
+      clearTimeout(hideT);
+      hideT = setTimeout(() => { if (!dragging && !r.matches(':hover')) r.classList.remove('on'); }, 1100);
+    };
+    const onScroll = () => { place(); show(); };
+    const scrollToY = (y) => (window.__lenis ? window.__lenis.scrollTo(y, { immediate: true, force: true }) : scrollTo(0, y));
+    const toY = (clientY) => { const { max, room } = metrics(); const top = r.getBoundingClientRect().top; return Math.min(max, Math.max(0, ((clientY - top - grab) / (room || 1)) * max)); };
+    const down = (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      const tb = th.getBoundingClientRect();
+      grab = e.target === th ? e.clientY - tb.top : tb.height / 2;   // rail click: centre the thumb on the pointer
+      dragging = true; r.classList.add('drag', 'on');
+      scrollToY(toY(e.clientY));
+      const move = (ev) => scrollToY(toY(ev.clientY));
+      const up = () => { dragging = false; r.classList.remove('drag'); show(); removeEventListener('pointermove', move); removeEventListener('pointerup', up); };
+      addEventListener('pointermove', move); addEventListener('pointerup', up);
+    };
+    const near = (e) => { if (e.clientX > innerWidth - 24) show(); };
+    const ro = new ResizeObserver(place); ro.observe(document.body);
+    addEventListener('scroll', onScroll, { passive: true });
+    addEventListener('resize', place);
+    addEventListener('pointermove', near, { passive: true });
+    r.addEventListener('pointerdown', down);
+    place();
+    return () => {
+      ro.disconnect(); clearTimeout(hideT);
+      removeEventListener('scroll', onScroll); removeEventListener('resize', place); removeEventListener('pointermove', near);
+      r.removeEventListener('pointerdown', down);
+    };
+  }, []);
+  return <div className="sbar" ref={rail} aria-hidden="true"><i ref={thumb} /></div>;
+}
+
 export function Cursor() {
   const dot = React.useRef(null);
   const ring = React.useRef(null);

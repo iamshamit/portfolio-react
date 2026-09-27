@@ -7,7 +7,7 @@ import { useNavigate, useLocation, Routes, Route } from 'react-router-dom';
 import './App.css';
 import './index.css';
 import { PORTFOLIO } from './data/config';
-import { Cursor, HeroBackdrop, Nav, Overlay, SMMark } from './Components/Field';
+import { Cursor, HeroBackdrop, Nav, Overlay, SMMark, ScrollBar } from './Components/Field';
 import { Hero, Marquee, About } from './Components/Hero';
 import { Featured, Gallery } from './Components/Work';
 import { Skills, Timeline, GitHub, Journal, Article, Contact, Footer, NotFound } from './Components/Sections';
@@ -319,6 +319,7 @@ export default function App() {
   return (
     <>
       <Cursor />
+      <ScrollBar />
       <HeroBackdrop />
       {intro && <div className="intro-mark" aria-hidden="true"><SMMark size={80} /></div>}
       <div className="grain" />
