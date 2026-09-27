@@ -34,9 +34,17 @@ function companion() {
 
 // Timeline rail fills as you read; on desktop the sphere rides its tip (data-orb-follow)
 function rail() {
-  if (!document.querySelector('.tl-rail')) return;
-  gsap.fromTo('.tl-rail i', { scaleY: 0 }, { scaleY: 1, ease: 'none',
-    scrollTrigger: { trigger: '.timeline', start: 'top 50%', end: 'bottom 50%', scrub: true } });
+  const railEl = document.querySelector('.tl-rail'), fill = railEl?.querySelector('i');
+  if (!fill) return;
+  // measured live every scroll (not trigger positions cached at load): the fill ends exactly where the sphere
+  // rides (viewport centre) even after late layout shifts such as the GitHub data arriving
+  const update = () => {
+    const b = railEl.getBoundingClientRect();
+    fill.style.transform = `scaleY(${gsap.utils.clamp(0, 1, (innerHeight / 2 - b.top) / (b.height || 1))})`;
+  };
+  if (window.__lenis) window.__lenis.on('scroll', update); else addEventListener('scroll', update, { passive: true });
+  addEventListener('resize', update);
+  update();
 }
 
 // 2 · Headings build themselves: chars rise out of line masks with a slight 3D tip

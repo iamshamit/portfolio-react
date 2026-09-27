@@ -1,4 +1,5 @@
 import React from 'react';
+import { track } from '../api';
 
 // Hidden terminal window: ` or ~ toggles it, Esc closes. Drag by the title bar, resize from the corner,
 // traffic lights close / minimise to the dock pill / maximise (double-click the title bar too).
@@ -56,6 +57,7 @@ export default function Terminal() {
       return;
     }
     wasOpen.current = true;
+    track('terminal:open');
     L?.stop();
     if (shell.current) { shell.current.focus(); return; }
     let dead = false;

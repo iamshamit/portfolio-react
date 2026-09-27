@@ -1,6 +1,7 @@
 import React from 'react';
 import gsap from 'gsap';
 import { PORTFOLIO } from '../data/config';
+import { onPresence, track } from '../api';
 
 export function Field() {
   return (
@@ -136,6 +137,8 @@ export function SMMark({ size = 30, className }) {
 
 export function Nav({ onOpen }) {
   const ref = React.useRef(null);
+  const [here, setHere] = React.useState(0);
+  React.useEffect(() => onPresence(setHere), []);
   React.useEffect(() => {
     let last = window.scrollY;
     const onScroll = () => {
@@ -158,12 +161,13 @@ export function Nav({ onOpen }) {
       <div className="center">
         <span className="dot" />
         Open to work
+        {here > 1 && <span className="here" title="people on the site right now">· {here} here now</span>}
       </div>
       <div className="right">
         <a className="lnk" href="#work" data-scroll="work">Work</a>
         <a className="lnk" href="#journal" data-scroll="journal">Journal</a>
         <a className="lnk" href="#contact" data-scroll="contact">Contact</a>
-        <button className="menu-btn" onClick={onOpen} aria-label="Open menu">
+        <button className="menu-btn" onClick={() => { track('menu:open'); onOpen(); }} aria-label="Open menu">
           <span /><span />
         </button>
       </div>

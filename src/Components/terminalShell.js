@@ -2,6 +2,7 @@
 // createShell(host, { onExit }) → Promise<{ focus, blur, dims, boot }>; xterm is only loaded on first open.
 import { PORTFOLIO } from '../data/config';
 import { localNow } from './LocalTime';
+import { API, api, presenceCount, nowPlaying, shortArtists, track } from '../api';
 
 const GH_USER = 'iamshamit';
 const A = (rgb) => (s) => `\x1b[38;2;${rgb}m${s}\x1b[0m`;
@@ -27,11 +28,20 @@ const bar = (v, max, width) => {
   return '█'.repeat(Math.floor(e / 8)) + (e % 8 ? '▏▎▍▌▋▊▉'[(e % 8) - 1] : '');
 };
 
+// soft-wrap plain text to the terminal width
+const wrap = (text, width) => String(text).split('\n').flatMap((para) => {
+  const out = []; let cur = '';
+  for (const w of para.split(/\s+/)) {
+    if (cur && (cur + ' ' + w).length > width) { out.push(cur); cur = w; } else cur = cur ? cur + ' ' + w : w;
+  }
+  return [...out, cur];
+});
+const askHist = [];   // the last exchanges, so follow-up questions make sense
+
 // ── GitHub data: the portfolio Worker when VITE_API_URL is set (your token, cached an hour),
 // otherwise straight from the public APIs (60 requests/hour per visitor). Both give the same shape:
 // { user: {login,name,bio,url,createdAt,publicRepos}, repos: [{name,description,stars,fork,pushedAt,language}],
 //   calendar: {total, days: [{date,count,level}]}, events: [{type,repo,at,size,refType}] }
-export const API = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 const getJSON = async (url) => {
   const r = await fetch(url);
   if (r.ok) return r.json();
@@ -82,6 +92,15 @@ const GH = {
     const stop = ctx.spin('fetching highlights');
     const list = pick((await ghData().finally(stop)).repos);
     const w = Math.max(...list.map((r) => r.name.length)) + 2, dw = ctx.cols - w - 38;
+    if (ctx.cols < w + 29) {   // narrow (phones): two lines per repo
+      return [
+        ...list.flatMap((r) => [
+          `  ${amber(r.name)}${r.stars >= STAR_MIN ? amber('  ★ ' + r.stars) : ''}`,
+          `    ${langDot(r.language).trimEnd()} ${dim('· ' + ago(r.pushedAt))}`,
+        ]),
+        '', dim('  the rest live at github.com/' + GH_USER),
+      ];
+    }
     return [
       dim(`  ${pad('repository', w)}${pad('language', 13)}${pad('updated', 10)}${pad('', 6)}${dw > 12 ? 'about' : ''}`),
       ...list.map((r) => {
@@ -143,8 +162,10 @@ const LOGO = [
 ];
 const SGRAD = ['160;224;171', '195;204;120', '230;186;80', '255;172;46', '220;110;45', '165;45;37'];
 
-function neofetch(ctx) {
+async function neofetch(arg, ctx) {
   const t = localNow(), grad = document.documentElement.dataset.grad || 'ocean';
+  const np = API ? await Promise.race([nowPlaying(), new Promise((r) => setTimeout(() => r(null), 1200))]) : null;
+  const here = presenceCount();
   const stack = PORTFOLIO.skills.flatMap((s) => s.items).slice(0, 5).join(', ');
   const info = [
     `${green(bold('shamit'))}${dim('@')}${amber(bold('portfolio'))}`,
@@ -158,24 +179,27 @@ function neofetch(ctx) {
     `${amber('Projects')}  ${projects().length}`,
     `${amber('Screen')}    ${innerWidth}×${innerHeight} @ ${devicePixelRatio}x`,
     `${amber('Theme')}     ${grad}`,
+    ...(np?.playing ? [`${amber('Music')}     ♪ ${np.title} ${dim('— ' + shortArtists(np.artist))}`] : []),
+    ...(here > 1 ? [`${amber('Here')}      ${here} visitors right now`] : []),
     '',
     ['160;224;171', '255;172;46', '165;45;37', '73;197;182', '79;124;255', '176;48;110', '240;238;232', '90;90;90'].map((c) => A(c)('███')).join(''),
   ];
   const W = Math.max(...LOGO.map((l) => l.length));
   const logo = LOGO.map((l, i) => A(SGRAD[i])(l.slice(0, 13)) + white(l.slice(13).padEnd(W - 13)));   // equal widths keep the info column straight
-  if (ctx.cols < 70) return [...logo, '', ...info];   // narrow window: stack instead of side by side
+  if (ctx.cols < 70) return info;   // narrow window (phones): the info alone; a 6-row logo above it would push it off screen
   return info.map((line, i) => (logo[i - 1] ?? ' '.repeat(W)) + '  ' + line);
 }
 
 // ── commands ──
 const HELP = [
-  ['whoami', 'who is this'], ['about', 'the longer version'], ['neofetch', 'system info, the fun way'],
+  ['ask <question>', 'ask anything about me (AI)'], ['whoami', 'who is this'], ['about', 'the longer version'], ['neofetch', 'system info, the fun way'],
   ['ls', 'list projects'], ['open <project>', 'open a project'], ['skills', 'the toolkit'],
-  ['gh [repos|langs|activity]', 'live GitHub'], ['message <text>', 'send me a note, straight to my phone'], ['contact', 'copy my email'], ['socials', 'where else to find me'],
+  ['gh [repos|langs|activity]', 'live GitHub'], ['message <text>', 'send me a note, straight to my phone'], ['sign', 'sign the guestbook'], ['guestbook', 'read what people left'],
+  ['who', 'who else is here'], ['np', "what I'm listening to"], ['contact', 'copy my email'], ['socials', 'where else to find me'],
   ['theme <name>', THEMES.join(' | ')], ['time', 'my local time'], ['clear', 'clear the screen  (ctrl+l)'], ['exit', 'close the terminal  (esc)'],
 ];
 const COMMANDS = {
-  help: () => ['available commands:', ...HELP.map(([c, d]) => `  ${amber(pad(c, 26))}${dim(d)}`)],
+  help: (arg, ctx) => ['available commands:', ...HELP.flatMap(([c, d]) => (ctx.cols < 60 ? [`  ${amber(c)}`, `    ${dim(d)}`] : [`  ${amber(pad(c, 26))}${dim(d)}`]))],   // phones: description under the command
   whoami: () => [`${green(PORTFOLIO.fullName)} · ${PORTFOLIO.role}`, dim(PORTFOLIO.location)],
   about: () => PORTFOLIO.about.body,
   neofetch,
@@ -202,6 +226,55 @@ const COMMANDS = {
     return r.ok
       ? [`${green('✓')} delivered. ${dim("I'll read it soon.")}`]
       : [`${rust('✕')} ${r.error || 'could not send'}. ${dim('try')} ${amber('contact')} ${dim('for my email')}`];
+  },
+  ask: async (arg, ctx) => {
+    const q = (arg || '').trim();
+    if (!q) return [`usage: ${amber('ask')} ${dim('<question>')}  ${dim('or just type a question ending in ?')}`, dim('  try: ask what has he built?   ask is he good with backend?   ask can I hire him?')];
+    if (!API) return [dim('the AI is offline here. try ') + amber('about') + dim(' or ') + amber('message')];
+    const stop = ctx.spin('thinking');
+    let r;
+    try { r = await api('/ask', { body: { q, history: askHist.slice(-4) } }); }
+    catch (e) { stop(); return [`${e.status === 429 ? amber('◷') : rust('✕')} ${e.message}`]; }
+    stop();
+    askHist.push({ role: 'user', content: q }, { role: 'assistant', content: r.answer });
+    await ctx.type(wrap(r.answer, Math.max(20, ctx.cols - 6)).map((l) => '  ' + l));
+    return r.left <= 3 ? [dim(`  ${r.left} question${r.left === 1 ? '' : 's'} left today`)] : [];
+  },
+  sign: async (arg, ctx) => {
+    if (!API) return [dim('the guestbook is offline here')];
+    const name = (await ctx.ask(`${amber('your name')} ${dim('›')} `))?.trim().slice(0, 40);
+    if (!name) return [dim('cancelled')];
+    const text = (arg || '').trim() || (await ctx.ask(`${amber('your note')} ${dim('›')} `))?.trim();
+    if (!text) return [dim('cancelled')];
+    const stop = ctx.spin('signing');
+    try { await api('/guestbook', { body: { name, text: text.slice(0, 280) } }); }
+    catch (e) { return [`${rust('✕')} ${e.message}`]; }
+    finally { stop(); }
+    return [`${green('✓')} signed. ${dim('it shows up in')} ${amber('guestbook')} ${dim('once Shamit has had a look ✦')}`];
+  },
+  guestbook: async (arg, ctx) => {
+    if (!API) return [dim('the guestbook is offline here')];
+    const stop = ctx.spin('opening the guestbook');
+    const list = await api('/guestbook').finally(stop);
+    if (!list.length) return [dim('  empty so far. be the first: ') + amber('sign')];
+    const w = Math.max(20, ctx.cols - 8);
+    return list.slice(0, 12).flatMap((g) => [
+      `  ${green(g.name)} ${dim('· ' + ago(g.created_at.replace(' ', 'T') + 'Z'))}`,
+      ...wrap(g.text, w).map((l) => '    ' + white(l)), '',
+    ]).concat(dim(`  ${list.length} ${list.length === 1 ? 'entry' : 'entries'} · add yours with `) + amber('sign'));
+  },
+  who: () => {
+    const n = presenceCount();
+    if (!n) return [dim('presence is offline right now')];
+    return [n === 1 ? `just you here right now ${dim('(hi ✦)')}` : `${amber(n)} people are on the site right now ${dim('(you included)')}`];
+  },
+  np: async (arg, ctx) => {
+    if (!API) return [dim('offline')];
+    const stop = ctx.spin('checking spotify');
+    const m = await nowPlaying(true).finally(stop);
+    if (!m.configured) return [dim("Shamit hasn't connected Spotify yet")];
+    if (m.playing) return [`${green('♪')} ${white(m.title)} ${dim('—')} ${m.artist}`, dim('  ' + m.url)];
+    return m.title ? [`${dim('last played')} ${white(m.title)} ${dim('—')} ${m.artist} ${dim('· ' + ago(m.at))}`] : [dim('nothing playing')];
   },
   contact: () => {
     const e = PORTFOLIO.contact.email;
@@ -233,24 +306,25 @@ const BOOT = [
 ];
 
 export async function createShell(host, { onExit }) {
-  const [{ Terminal: X }, { FitAddon }, { WebglAddon }] = await Promise.all([import('xterm'), import('xterm-addon-fit'), import('xterm-addon-webgl'), import('xterm/css/xterm.css')]);
+  const [{ Terminal: X }, { FitAddon }, { CanvasAddon }] = await Promise.all([import('xterm'), import('xterm-addon-fit'), import('xterm-addon-canvas'), import('xterm/css/xterm.css')]);
   const t = new X({
-    fontFamily: '"Fira Code", ui-monospace, monospace', fontSize: 13, lineHeight: 1.35, cursorBlink: true, cursorStyle: 'bar',
+    fontFamily: '"Fira Code", ui-monospace, monospace', fontSize: 13, lineHeight: devicePixelRatio < 1.5 ? 1.35 : 1.15, cursorBlink: true, cursorStyle: 'bar',   // DOM renderer (high-DPR): tighter rows so block glyphs touch
     allowTransparency: true, scrollback: 2000,
     theme: { background: '#00000000', foreground: '#e6e3dc', cursor: '#ffac2e', cursorAccent: '#000', selectionBackground: 'rgba(255,172,46,.3)' },
   });
   const fit = new FitAddon();
   t.loadAddon(fit);
   t.open(host);
-  // WebGL renderer: block glyphs (logo, bars) drawn on the exact cell grid; DOM renderer stays as the fallback
-  try { const gl = new WebglAddon(); gl.onContextLoss(() => gl.dispose()); t.loadAddon(gl); } catch { /* no WebGL: DOM renderer */ }
+  // renderer: canvas on standard screens (block glyphs sit on the exact cell grid); the DOM renderer on
+  // high-density screens, where xterm's canvas/WebGL renderers draw everything at devicePixelRatio× size (phones, Retina)
+  if (devicePixelRatio < 1.5) try { t.loadAddon(new CanvasAddon()); } catch { /* DOM renderer */ }
   fit.fit();
   const listeners = new Set();
   new ResizeObserver(() => { fit.fit(); listeners.forEach((f) => f(t.cols, t.rows)); }).observe(host);
 
   const PS = `${green('shamit')}${dim('@')}${amber('portfolio')} ${dim('~ $')} `;
   const hist = JSON.parse(localStorage.getItem('shamit.term.hist') || '[]');
-  let line = '', h = hist.length, busy = false, cancelled = false;
+  let line = '', h = hist.length, busy = false, cancelled = false, asking = null;
   const prompt = () => { t.write('\r\n' + PS); line = ''; h = hist.length; };
   const redraw = (s) => { t.write('\x1b[2K\r' + PS + s); line = s; };
   const ctx = {
@@ -262,6 +336,20 @@ export async function createShell(host, { onExit }) {
       const id = setInterval(() => t.write(`\r${amber(F[i++ % F.length])} ${dim(label + '…')}`), 80);
       return () => { clearInterval(id); t.write('\r\x1b[2K\x1b[1A'); };
     },
+    // one line of input mid-command (sign's name/note); resolves null on ctrl+c
+    ask(label) {
+      t.write('\r\n' + label);
+      line = '';
+      return new Promise((res) => { asking = res; });
+    },
+    // typewriter: a few characters per frame, stops early on ctrl+c
+    async type(lines) {
+      for (const l of lines) {
+        if (cancelled) return;
+        t.write('\r\n');
+        for (let i = 0; i < l.length && !cancelled; i += 3) { t.write(l.slice(i, i + 3)); await new Promise((r) => setTimeout(r, 12)); }
+      }
+    },
   };
 
   const run = async (raw) => {
@@ -271,14 +359,24 @@ export async function createShell(host, { onExit }) {
     localStorage.setItem('shamit.term.hist', JSON.stringify(hist.slice(-100)));
     if (cmd === 'clear') { t.clear(); return; }
     if (cmd === 'exit') { onExit(); return; }
-    const fn = COMMANDS[cmd.toLowerCase()];
+    let fn = COMMANDS[cmd.toLowerCase()], arg = rest.join(' ');
+    if (!fn && raw.trim().endsWith('?')) { fn = COMMANDS.ask; arg = raw.trim(); }   // a plain question goes to the AI
+    track('term:' + (fn === COMMANDS.ask ? 'ask' : fn ? cmd.toLowerCase() : 'unknown'));
     let out;
-    try { out = fn ? await fn(rest.join(' '), ctx) : [`command not found: ${cmd}. try ${amber('help')}`]; }
+    try { out = fn ? await fn(arg, ctx) : [`command not found: ${cmd}. try ${amber('help')}, or ask a question ending in ?`]; }
     catch (e) { out = [rust('✕ ' + (e.message || 'something went wrong'))]; }
     if (!cancelled) out.forEach((l) => t.write('\r\n' + l));
   };
 
   t.onData(async (d) => {
+    if (asking) {   // a command is waiting for one line of input
+      const done = (v) => { const r = asking; asking = null; r(v); };
+      if (d === '\r') done(line);
+      else if (d === '\x03') { t.write(dim('^C')); done(null); }
+      else if (d === '\x7f') { if (line) { line = line.slice(0, -1); t.write('\b \b'); } }
+      else if (!d.startsWith('\x1b')) { const s = d.replace(/[\x00-\x1f\x7f]/g, ''); line += s; t.write(s); }   // eslint-disable-line no-control-regex
+      return;
+    }
     if (d === '\x03') {   // ctrl+c
       if (busy) cancelled = true;
       t.write(dim('^C'));
@@ -306,7 +404,7 @@ export async function createShell(host, { onExit }) {
 
   const banner = () => {
     t.writeln(`${amber('✦')} ${green(bold('shamit.sh'))} ${dim('— you found the back door.')}`);
-    t.write(dim(`type ${amber('help')} to look around, or try ${amber('neofetch')} and ${amber('gh activity')}.`));
+    t.write(dim(`type ${amber('help')} to look around, or just ask: `) + white('what has he built?'));
     prompt();
   };
 

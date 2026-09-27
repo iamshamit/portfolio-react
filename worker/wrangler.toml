@@ -4,5 +4,30 @@ compatibility_date = "2026-09-01"
 
 [vars]
 GH_USER = "iamshamit"
-# the site's own origins (comma-separated); add your real domain here before deploying
+# the site's own origins (comma-separated, with scheme); nothing else may call the API
 ALLOWED_ORIGINS = "https://iamshamit.com,https://www.iamshamit.com,https://shamit.is-a.dev,http://localhost:5173"
+
+# Ask Shamit: Workers AI (free plan: 10,000 neurons/day; one answer ≈ 20–25)
+[ai]
+binding = "AI"
+
+# guestbook, view/spark counters, daily caps, analytics counters (schema.sql)
+[[d1_databases]]
+binding = "DB"
+database_name = "portfolio"
+database_id = "2156fc2c-cc09-4884-bf1b-a9340646194a"
+
+# live presence: one hibernating Durable Object holds every visitor's socket
+[[durable_objects.bindings]]
+name = "PRESENCE"
+class_name = "Presence"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Presence"]
+
+# per-visitor burst guard, checked before any real work (per Cloudflare location)
+[[ratelimits]]
+name = "BURST"
+namespace_id = "1001"
+simple = { limit = 60, period = 60 }

@@ -5,6 +5,7 @@ import { SMMark } from './Field';
 import { BlockRenderer, Toc, TocMobile } from './JournalBlocks';
 import { Link } from 'react-router-dom';
 import LocalTime from './LocalTime';
+import { API, api, nowPlaying, shortArtists, track } from '../api';
 
 export function Skills() {
   return (
@@ -153,6 +154,7 @@ export function Contact() {
   const timer = React.useRef();
   const openMail = () => { window.location.href = `mailto:${email}`; };
   const copy = () => {
+    track('contact:copy');
     if (!navigator.clipboard) return openMail();
     navigator.clipboard.writeText(email).then(() => {
       if (navigator.vibrate) navigator.vibrate(12);   // phones: a tiny tap to confirm
@@ -249,6 +251,29 @@ export function NotFound() {
   );
 }
 
+// Spotify line: asked for once, when the footer first comes into view; hidden until Spotify is connected
+function NowPlaying() {
+  const ref = React.useRef(null);
+  const [m, setM] = React.useState(null);
+  React.useEffect(() => {
+    if (!API) return;
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { io.disconnect(); nowPlaying().then(setM); } }, { rootMargin: '200px' });
+    io.observe(ref.current);
+    return () => io.disconnect();
+  }, []);
+  const show = m?.title;
+  return (
+    <div ref={ref} className={`np${show ? ' in' : ''}`}>
+      {show && (
+        <a href={m.url} target="_blank" rel="noreferrer">
+          <span className={`np-bars${m.playing ? ' live' : ''}`} aria-hidden="true"><i /><i /><i /></span>
+          {m.playing ? 'Listening to' : 'Last played'} {m.title} · {shortArtists(m.artist)}
+        </a>
+      )}
+    </div>
+  );
+}
+
 export function Footer() {
   return (
     <footer className="footer">
@@ -259,6 +284,7 @@ export function Footer() {
             <div>{PORTFOLIO.role}</div>
             <LocalTime>{(t) => <div>{t.time} in India · {t.status}</div>}</LocalTime>
             <div>Designed in the dark · Built with care</div>
+            <NowPlaying />
           </div>
         </div>
         <div className="legal">
@@ -313,6 +339,35 @@ export function Journal({ onOpen }) {
   );
 }
 
+const slugOf = (t) => String(t).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const mem = {
+  get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k) => { try { localStorage.setItem(k, '1'); } catch { /* private mode */ } },
+};
+
+// views count once per browser per article; one ✦ spark per browser per article
+function useArticleStats(slug) {
+  const [stats, setStats] = React.useState(null);
+  const [sparked, setSparked] = React.useState(false);
+  React.useEffect(() => {
+    setStats(null);
+    if (!slug || !API) return;
+    setSparked(!!mem.get('sparked:' + slug));
+    const seen = mem.get('viewed:' + slug);
+    api(seen ? `/counts/${slug}` : `/views/${slug}`, seen ? {} : { method: 'POST', body: {} })
+      .then((s) => { setStats(s); if (!seen) mem.set('viewed:' + slug); }, () => {});
+  }, [slug]);
+  const spark = () => {
+    if (sparked || !stats) return;
+    setSparked(true); mem.set('sparked:' + slug);
+    setStats((s) => ({ ...s, sparks: s.sparks + 1 }));   // optimistic
+    track('spark:' + slug);
+    api(`/spark/${slug}`, { method: 'POST', body: {} }).then(setStats, () => {});
+  };
+  return { stats, sparked, spark };
+}
+const compact = (n) => (n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, '') + 'k' : String(n));
+
 export function Article({ index, onClose, onNav }) {
   const open = index != null;
   const post = open ? PORTFOLIO.journal[index] : null;
@@ -335,6 +390,9 @@ export function Article({ index, onClose, onNav }) {
   const total = PORTFOLIO.journal ? PORTFOLIO.journal.length : 0;
   const next = open ? PORTFOLIO.journal[(index + 1) % total] : null;
   const hasToc = post?.body?.some(b => b.toc);
+  const slug = post ? slugOf(post.title) : null;
+  const { stats, sparked, spark } = useArticleStats(slug);
+  React.useEffect(() => { if (slug) track('article:' + slug); }, [slug]);
 
   return (
     <div className={`article${open ? ' open' : ''}`} aria-hidden={open ? 'false' : 'true'}>
@@ -353,6 +411,7 @@ export function Article({ index, onClose, onNav }) {
                 <span className="a-tag">{post.tag}</span>
                 <span>{post.date}</span>
                 <span>{post.read} read</span>
+                {stats && <span className="a-views">{compact(stats.views)} {stats.views === 1 ? 'view' : 'views'}</span>}
               </div>
               <h1 className="a-title">{post.title}</h1>
               <p className="a-lede">{post.excerpt}</p>
@@ -363,6 +422,12 @@ export function Article({ index, onClose, onNav }) {
               <div className="a-end">
                 <span className="a-mark"><SMMark size={26} /></span>
                 <span>Shamit Mishra · {post.date}</span>
+                {stats && (
+                  <button className={`a-spark${sparked ? ' on' : ''}`} onClick={spark} aria-pressed={sparked}
+                    aria-label={sparked ? `You sparked this. ${stats.sparks} sparks` : `Spark this article. ${stats.sparks} sparks`}>
+                    <i aria-hidden="true">✦</i>{compact(stats.sparks)}
+                  </button>
+                )}
               </div>
               {next && (
                 <button className="a-next" onClick={() => onNav(1)} data-cursor="view">

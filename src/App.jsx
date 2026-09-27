@@ -14,6 +14,7 @@ import { Skills, Timeline, GitHub, Journal, Article, Contact, Footer, NotFound }
 import Terminal from './Components/Terminal';
 import JournalPage from './Components/JournalPage';
 import { initFx } from './fx';
+import { track } from './api';
 
 function slugify(text) {
   return String(text).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -81,6 +82,23 @@ export default function App() {
       window.__lenis = lenis;
     }
 
+    // Analytics (batched, one beacon per visit): where people go and how far they read
+    const onOut = (e) => {
+      const a = e.target.closest('a[href]');
+      if (!a) return;
+      const u = new URL(a.href, window.location.href);   // (not the router's `location` in this scope)
+      if (u.protocol === 'mailto:') track('contact:mailto');
+      else if (u.host !== window.location.host) track('out:' + u.host.replace(/^www\./, '') + (u.host.includes('github.com') ? u.pathname.split('/').slice(0, 3).join('/') : ''));
+    };
+    document.addEventListener('click', onOut);
+    const depth = new Set();
+    const onDepth = () => {
+      const h = document.documentElement, p = (h.scrollTop + innerHeight) / h.scrollHeight;
+      for (const q of [25, 50, 75, 100]) if (p * 100 >= q - 1 && !depth.has(q)) { depth.add(q); track('scroll:' + q); }
+    };
+    addEventListener('scroll', onDepth, { passive: true });
+    track('visit' + (matchMedia('(pointer:coarse)').matches ? ':touch' : ':desktop'));
+
     // Away from the tab: the title calls you back and the favicon turns into the sphere
     const icon = document.querySelector('link[rel="icon"]'), iconHref = icon && icon.getAttribute('href');
     let homeTitle = document.title;
@@ -143,6 +161,8 @@ export default function App() {
     document.querySelectorAll('.reveal,[data-stagger]').forEach((el) => io.observe(el));
 
     if (reduce) return () => {
+      document.removeEventListener('click', onOut);
+      removeEventListener('scroll', onDepth);
       document.removeEventListener('visibilitychange', onVis);
       document.removeEventListener('click', onAnchorClick);
       removeEventListener('scroll', onScroll);
@@ -237,10 +257,10 @@ export default function App() {
 
     // Pinned horizontal gallery (desktop)
     const gal = document.querySelector('[data-gallery]');
-    const track = document.querySelector('[data-gallery-track]');
-    if (gal && track && !isMobile) {
-      const getX = () => track.scrollWidth - window.innerWidth + 80;
-      gsap.to(track, {
+    const galTrack = document.querySelector('[data-gallery-track]');
+    if (gal && galTrack && !isMobile) {
+      const getX = () => galTrack.scrollWidth - window.innerWidth + 80;
+      gsap.to(galTrack, {
         x: () => -getX(), ease: 'none',
         scrollTrigger: {
           trigger: gal, start: 'top top',
@@ -279,6 +299,8 @@ export default function App() {
     setTimeout(() => { ScrollTrigger.refresh(); if (lenis) lenis.resize(); }, 1500);
 
     return () => {
+      document.removeEventListener('click', onOut);
+      removeEventListener('scroll', onDepth);
       document.removeEventListener('visibilitychange', onVis);
       document.removeEventListener('click', onAnchorClick);
       removeEventListener('scroll', onScroll);
@@ -289,7 +311,9 @@ export default function App() {
     };
   }, []);
 
-  const isHome = location.pathname === '/' || location.pathname.startsWith('/blog/');
+  // /blog/<slug> is home with that article open, but only for a real post; anything else is the void
+  const blogSlug = location.pathname.match(/^\/blog\/([^/]+)\/?$/)?.[1];
+  const isHome = location.pathname === '/' || (!!blogSlug && PORTFOLIO.journal.some((p) => slugify(p.title) === decodeURIComponent(blogSlug)));
   const hero = PORTFOLIO.hero;
 
   return (

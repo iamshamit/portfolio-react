@@ -569,6 +569,8 @@ html.menu-open .nav{opacity:0;pointer-events:none}   /* the overlay is see-throu
 
 /* live clock status under the hero location */
 .hero .hello .status{color:rgba(255,255,255,.5)}
+/* phones: clock + status get their own row above the scroll cue (they collided side by side) */
+@media(max-width:560px){ .hero .hello{bottom:64px} }
 
 /* hidden terminal (` or ~): a floating glass window (Terminal.jsx sets left/top/width/height) */
 .term{position:fixed;z-index:97;display:flex;flex-direction:column;border-radius:14px;overflow:hidden;
@@ -658,3 +660,27 @@ kbd{font-family:'Fira Code',ui-monospace,monospace;font-size:11px;padding:1px 6p
 .term .xterm-viewport::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:10px;border:3px solid transparent;background-clip:padding-box}
 .term .xterm-viewport::-webkit-scrollbar-thumb:hover{background-color:rgba(255,172,46,.45)}
 @supports not selector(::-webkit-scrollbar){ .term .xterm-viewport{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.14) transparent} }
+
+/* ── live bits from the Worker ── */
+.nav .center .here{margin-left:6px;color:rgba(255,255,255,.45);letter-spacing:.14em;animation:here-in .6s var(--ease)}
+@keyframes here-in{from{opacity:0;translate:0 4px}}
+
+.a-views{color:var(--muted)}
+.a-spark{margin-left:auto;display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border:1px solid var(--faint);border-radius:var(--radius-full);
+  font:500 13px var(--roo);color:rgba(255,255,255,.7);transition:border-color .3s,color .3s,background .3s}
+.a-spark i{font-style:normal;color:#ffac2e;display:inline-block;transition:transform .5s cubic-bezier(.2,1.6,.3,1),text-shadow .5s}
+.a-spark:hover{border-color:var(--border);color:#fff}
+.a-spark:hover i{transform:rotate(45deg) scale(1.2)}
+.a-spark.on{border-color:rgba(255,172,46,.45);background:rgba(255,172,46,.08);color:#fff;cursor:default}
+.a-spark.on i{transform:rotate(90deg) scale(1.25);text-shadow:0 0 14px rgba(255,172,46,.9)}
+
+.np{min-height:0;opacity:0;transition:opacity .6s var(--ease)}
+.np.in{opacity:1}
+.np a{display:inline-flex;align-items:center;gap:8px;transition:color .3s}
+.np a:hover{color:#fff}
+.np-bars{display:inline-flex;align-items:flex-end;gap:2px;height:10px}
+.np-bars i{width:2px;height:40%;background:#a0e0ab;border-radius:1px}
+.np-bars.live i{animation:np-bar 1s ease-in-out infinite}
+.np-bars.live i:nth-child(2){animation-delay:-.4s}.np-bars.live i:nth-child(3){animation-delay:-.7s}
+@keyframes np-bar{0%,100%{height:30%}50%{height:100%}}
+@media(prefers-reduced-motion:reduce){ .np-bars.live i{animation:none;height:70%} }
