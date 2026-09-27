@@ -9,7 +9,13 @@ export class Presence extends DurableObject {
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('ping', 'pong'));
   }
 
-  async fetch() {
+  async fetch(req) {
+    // the Worker pushes live updates (a new status note) to every open socket
+    if (req.method === 'POST') {
+      const msg = await req.text();
+      for (const w of this.ctx.getWebSockets()) { try { w.send(msg); } catch { /* gone */ } }
+      return new Response(null, { status: 204 });
+    }
     const [client, server] = Object.values(new WebSocketPair());
     this.ctx.acceptWebSocket(server);
     this.broadcast();

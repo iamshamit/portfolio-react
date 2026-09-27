@@ -7,8 +7,10 @@
 //   POST /views/:slug  · POST /spark/:slug  · GET /counts/:slug   → article views and ✦ sparks
 //   GET  /presence  (WebSocket)                    → live visitor count (Durable Object)
 //   GET  /now-playing                              → Spotify, cached 30s (off until the SPOTIFY_* secrets exist)
+//   GET  /activity                                 → hero line: status note (24h) + music + latest push
+//   GET|POST /note?k=NOTE_KEY                      → your private page to set the note; pushes it live to every visitor
 //   POST /events  (sendBeacon, one per visit)      → analytics counters
-// Secrets: DISCORD_WEBHOOK, GITHUB_TOKEN, ADMIN_SECRET, [SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REFRESH_TOKEN]
+// Secrets: DISCORD_WEBHOOK, GITHUB_TOKEN, ADMIN_SECRET, NOTE_KEY, [SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REFRESH_TOKEN]
 import { answer } from './ask.js';
 export { Presence } from './presence.js';
 
@@ -118,17 +120,17 @@ async function bump(env, slug, kind) {
 }
 
 // ── Spotify now playing ──
-async function nowPlaying(env, ctx) {
-  if (!env.SPOTIFY_REFRESH_TOKEN) return json({ configured: false });
+async function spotify(env, ctx) {
+  if (!env.SPOTIFY_REFRESH_TOKEN) return { configured: false };
   const key = new Request('https://cache.local/now-playing');
   const hit = await caches.default.match(key);
-  if (hit) return json(await hit.json());
+  if (hit) return hit.json();
   const tok = await fetch('https://accounts.spotify.com/api/token', {
     method: 'POST',
     headers: { authorization: 'Basic ' + btoa(`${env.SPOTIFY_CLIENT_ID}:${env.SPOTIFY_CLIENT_SECRET}`), 'content-type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: env.SPOTIFY_REFRESH_TOKEN }),
   }).then((r) => r.json());
-  if (!tok.access_token) return json({ configured: true, playing: false });
+  if (!tok.access_token) return { configured: true, playing: false };
   const h = { authorization: `Bearer ${tok.access_token}` };
   const track = (t) => t && { title: t.name, artist: t.artists.map((a) => a.name).join(', '), url: t.external_urls?.spotify };
   let out;
@@ -141,7 +143,65 @@ async function nowPlaying(env, ctx) {
     out = { configured: true, playing: false, ...(item ? { ...track(item.track), at: item.played_at } : {}) };
   }
   ctx.waitUntil(caches.default.put(key, json(out, 200, { 'cache-control': 'max-age=30' })));
-  return json(out);
+  return out;
+}
+const nowPlaying = async (env, ctx) => json(await spotify(env, ctx));
+
+// ── live activity for the hero: status note + music + latest push ──
+const NOTE_TTL = 24 * 3600 * 1000;
+async function currentNote(env) {
+  const row = await env.DB.prepare('SELECT text, set_at FROM note WHERE id = 1').first();
+  if (!row) return null;
+  const at = new Date(row.set_at.replace(' ', 'T') + 'Z');
+  return Date.now() - at < NOTE_TTL ? { text: row.text, at: at.toISOString() } : null;
+}
+async function lastPush(env, ctx) {
+  const key = new Request('https://cache.local/last-push');
+  const hit = await caches.default.match(key);
+  if (hit) return hit.json();
+  const ev = await fetch(`https://api.github.com/users/${env.GH_USER}/events/public?per_page=15`, {
+    headers: { authorization: `Bearer ${env.GITHUB_TOKEN}`, 'user-agent': 'portfolio-worker', accept: 'application/vnd.github+json' },
+  }).then((r) => (r.ok ? r.json() : [])).catch(() => []);
+  const e = ev.find((x) => x.type === 'PushEvent');
+  const out = e ? { repo: e.repo.name.replace(env.GH_USER + '/', ''), at: e.created_at } : null;
+  ctx.waitUntil(caches.default.put(key, json(out, 200, { 'cache-control': 'max-age=300' })));
+  return out;
+}
+async function activityData(env, ctx) {
+  const [note, music, push] = await Promise.all([currentNote(env), spotify(env, ctx).catch(() => null), lastPush(env, ctx).catch(() => null)]);
+  return { note, music: music?.playing ? { title: music.title, artist: music.artist, url: music.url } : null, push };
+}
+
+// ── /note: your private page for setting the note (bookmark it on your phone). Key = NOTE_KEY secret. ──
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+const same = (a, b) => a.length === b.length && [...a].reduce((d, c, i) => d | (c.charCodeAt(0) ^ b.charCodeAt(i)), 0) === 0;
+async function notePage(req, env, ctx, url) {
+  const key = url.searchParams.get('k') || '';
+  if (!env.NOTE_KEY || !same(key, env.NOTE_KEY)) return new Response('not found', { status: 404 });
+  let flash = '';
+  if (req.method === 'POST') {
+    const form = await req.formData();
+    const text = clean(form.get('text'), 60);
+    if (form.get('action') === 'clear') { await env.DB.prepare('DELETE FROM note WHERE id = 1').run(); flash = 'cleared'; }
+    else if (text) { await env.DB.prepare("INSERT INTO note (id, text, set_at) VALUES (1, ?1, datetime('now')) ON CONFLICT (id) DO UPDATE SET text = ?1, set_at = datetime('now')").bind(text).run(); flash = 'live on the site ✦'; }
+    const activity = await activityData(env, ctx);
+    ctx.waitUntil(env.PRESENCE.get(env.PRESENCE.idFromName('site')).fetch('https://do/broadcast', { method: 'POST', body: JSON.stringify({ activity }) }));
+  }
+  const note = await currentNote(env);
+  const left = note ? Math.max(1, Math.round((NOTE_TTL - (Date.now() - new Date(note.at))) / 3600000)) : 0;
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><meta name="theme-color" content="#0a0907"><title>note</title><style>
+*{box-sizing:border-box}body{margin:0;min-height:100svh;display:grid;place-items:center;background:radial-gradient(120% 80% at 80% 0%,#2a1e0c,#0a0907 60%);color:#ece8df;font:16px/1.4 ui-sans-serif,system-ui,sans-serif;padding:24px}
+main{width:min(420px,100%)}h1{font:500 12px ui-monospace,monospace;letter-spacing:.18em;text-transform:uppercase;color:#8a8577;margin:0 0 18px}
+.cur{padding:16px 18px;border:1px solid #ffffff1a;border-radius:18px;background:#ffffff08;margin-bottom:22px}.cur b{display:block;font-weight:500;font-size:18px;margin-bottom:4px}.cur small{color:#8a8577}
+input{width:100%;font:inherit;font-size:18px;color:inherit;background:#ffffff0d;border:1px solid #ffffff26;border-radius:14px;padding:14px 16px;outline:none}input:focus{border-color:#ffac2e}
+.row{display:flex;gap:10px;margin-top:12px}button{flex:1;font:inherit;padding:13px;border-radius:14px;border:1px solid #ffffff26;background:none;color:inherit}button.go{background:#ffac2e;color:#1a1204;border:0;font-weight:600}
+.flash{color:#a0e0ab;font:13px ui-monospace,monospace;margin-bottom:14px}.count{text-align:right;color:#8a8577;font-size:12px;margin-top:6px}
+</style></head><body><main><h1>✦ your note · iamshamit.com</h1>${flash ? `<div class="flash">${esc(flash)}</div>` : ''}
+<div class="cur">${note ? `<b>${esc(note.text)}</b><small>live · disappears in ~${left}h</small>` : '<small>no note right now: the hero shows your music or latest push</small>'}</div>
+<form method="post"><input name="text" maxlength="60" placeholder="what's on your mind? (60)" autocomplete="off" oninput="document.getElementById('c').textContent=this.value.length+'/60'">
+<div class="count" id="c">0/60</div><div class="row"><button class="go" name="action" value="set">Share</button>${note ? '<button name="action" value="clear">Clear</button>' : ''}</div></form></main></body></html>`;
+  return new Response(html, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' } });
 }
 
 // ── analytics: one beacon per visit, { e: { "event:name": count } } ──
@@ -193,6 +253,7 @@ export default {
     const url = new URL(req.url), path = url.pathname;
     // the moderation link is opened from Discord (no Origin header): it carries its own HMAC signature instead
     if (path === '/guestbook/moderate' && req.method === 'GET') return moderate(url, env);
+    if (path === '/note') return notePage(req, env, ctx, url);   // your phone, no Origin: guarded by the NOTE_KEY in the link
 
     const cors = corsFor(req, env);
     if (!cors) return new Response('forbidden', { status: 403 });   // only the portfolio's own pages may call this
@@ -212,6 +273,7 @@ export default {
       else if (path === '/guestbook' && req.method === 'GET') res = await guestbookList(env, ctx);
       else if (path === '/guestbook' && req.method === 'POST') res = await guestbookSign(req, env, who);
       else if (path === '/now-playing' && req.method === 'GET') res = await nowPlaying(env, ctx);
+      else if (path === '/activity' && req.method === 'GET') res = json(await activityData(env, ctx));
       else if (path === '/events' && req.method === 'POST') res = await events(req, env, who);
       else if (m && SLUG.test(m[2])) {
         if (m[1] === 'counts' && req.method === 'GET') res = json(await counts(env, m[2]));

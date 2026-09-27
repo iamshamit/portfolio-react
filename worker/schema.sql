@@ -17,3 +17,6 @@ CREATE TABLE IF NOT EXISTS counters (slug TEXT NOT NULL, kind TEXT NOT NULL, n I
 
 -- analytics: one row per event name per day
 CREATE TABLE IF NOT EXISTS events (day TEXT NOT NULL, name TEXT NOT NULL, n INTEGER NOT NULL, PRIMARY KEY (day, name));
+
+-- status note (Instagram-notes style): one row, expires 24h after it is set
+CREATE TABLE IF NOT EXISTS note (id INTEGER PRIMARY KEY CHECK (id = 1), text TEXT NOT NULL, set_at TEXT NOT NULL DEFAULT (datetime('now')));

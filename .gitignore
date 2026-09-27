@@ -32,3 +32,4 @@ PRODUCT.md
 # Cloudflare Worker local state / secrets
 .wrangler
 .dev.vars
+.note-link

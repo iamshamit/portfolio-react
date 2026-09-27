@@ -17,7 +17,11 @@ const emit = () => subs.forEach((f) => f(here));
 function connect() {
   if (!API || ws) return;
   ws = new WebSocket(API.replace(/^http/, 'ws') + '/presence');
-  ws.onmessage = (e) => { try { here = JSON.parse(e.data).here ?? here; tries = 0; emit(); } catch { /* pong */ } };
+  ws.onmessage = (e) => {
+    let m; try { m = JSON.parse(e.data); } catch { return; }   // "pong"
+    if (m.here != null) { here = m.here; tries = 0; emit(); }
+    if (m.activity) setActivity(m.activity);   // a new note, pushed the moment it is shared
+  };
   ws.onclose = () => {
     ws = null; clearInterval(pinger); here = 0; emit();
     if (document.visibilityState === 'visible' && tries++ < 4) setTimeout(connect, 2000 * tries);
@@ -48,3 +52,17 @@ let np = null;
 // "A, B, C, D" → "A, B +2": keeps one-line spots one line
 export const shortArtists = (s = '') => { const a = s.split(', '); return a.length > 2 ? `${a.slice(0, 2).join(', ')} +${a.length - 2}` : s; };
 export const nowPlaying = (fresh) => ((fresh || !np) ? (np = api('/now-playing').catch(() => ({ configured: false }))) : np);
+
+// ── hero activity: { note, music, push }. Fetched on demand, refreshed every 60s while someone is watching,
+// and pushed live over the presence socket when a note is shared ──
+let activity = null, actTimer = null;
+const actSubs = new Set();
+function setActivity(a) { activity = a; actSubs.forEach((f) => f(a)); }
+const refreshActivity = () => api('/activity').then(setActivity, () => {});
+export function onActivity(fn) {
+  actSubs.add(fn);
+  if (activity) fn(activity); else refreshActivity();
+  connect();
+  if (!actTimer) actTimer = setInterval(() => document.visibilityState === 'visible' && refreshActivity(), 60000);
+  return () => { actSubs.delete(fn); if (!actSubs.size) { clearInterval(actTimer); actTimer = null; } };
+}
