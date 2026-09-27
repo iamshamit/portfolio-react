@@ -710,3 +710,7 @@ kbd{font-family:'Fira Code',ui-monospace,monospace;font-size:11px;padding:1px 6p
   .hero .hello{position:static;bottom:auto;right:auto;margin-top:26px;padding:0 24px;align-items:flex-start;text-align:left}
   .note-bubble{border-radius:18px 18px 18px 5px;transform-origin:0 100%}
 }
+
+/* no native page scrollbar: its grey gutter broke the edge-to-edge background (the top progress bar shows position) */
+html{scrollbar-width:none}
+html::-webkit-scrollbar{display:none}
