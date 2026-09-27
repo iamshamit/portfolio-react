@@ -590,8 +590,23 @@ html.menu-open .nav{opacity:0;pointer-events:none}   /* the overlay is see-throu
 body:has(.term.open:hover) :is(.cursor,.cursor-ring,.cursor-label){opacity:0}
 .term-bar{flex:none;height:42px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 14px;
   border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);cursor:grab;user-select:none;touch-action:none}
-body.term-moving,body.term-moving *{cursor:grabbing!important;user-select:none}
-body.term-resizing,body.term-resizing *{cursor:nwse-resize!important;user-select:none}
+body[data-term-drag]{user-select:none}
+body[data-term-drag="move"] *{cursor:grabbing!important}
+body:is([data-term-drag="n"],[data-term-drag="s"]) *{cursor:ns-resize!important}
+body:is([data-term-drag="e"],[data-term-drag="w"]) *{cursor:ew-resize!important}
+body:is([data-term-drag="se"],[data-term-drag="nw"]) *{cursor:nwse-resize!important}
+body:is([data-term-drag="ne"],[data-term-drag="sw"]) *{cursor:nesw-resize!important}
+/* resize zones: 8px edges, 22px corners, sitting over the window's own border */
+.term .rz{position:absolute;z-index:6;touch-action:none}
+.term .rz-n,.term .rz-s{left:22px;right:22px;height:8px}
+.term .rz-e,.term .rz-w{top:22px;bottom:22px;width:8px}
+.term .rz-n{top:0;cursor:ns-resize}.term .rz-s{bottom:0;cursor:ns-resize}
+.term .rz-e{right:0;cursor:ew-resize}.term .rz-w{left:0;cursor:ew-resize}
+.term :is(.rz-ne,.rz-nw,.rz-se,.rz-sw){width:22px;height:22px}
+.term .rz-nw{top:0;left:0;cursor:nwse-resize}.term .rz-se{bottom:0;right:0;cursor:nwse-resize}
+.term .rz-ne{top:0;right:0;cursor:nesw-resize}.term .rz-sw{bottom:0;left:0;cursor:nesw-resize}
+.term .rz-se:hover~.term-grip,body[data-term-drag] .term-grip{opacity:1}
+.term.max .rz{display:none}
 .lights{display:flex;gap:8px}
 .tl{width:12px;height:12px;border-radius:50%;display:grid;place-items:center;cursor:default;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.35)}
 .tl-close{background:#ff5f57}.tl-min{background:#febc2e}.tl-max{background:#28c840}
@@ -601,13 +616,13 @@ body.term-resizing,body.term-resizing *{cursor:nwse-resize!important;user-select
 .term-title{font-size:12px;letter-spacing:.04em;color:rgba(255,255,255,.55);white-space:nowrap}
 .term-keys{justify-self:end;color:rgba(255,255,255,.35)}
 .term-keys kbd{font-size:10px;border-color:rgba(255,255,255,.12)}
-.term-host{flex:1;min-height:0;padding:12px 8px 12px 16px}
+.term-host{flex:1;min-height:0;padding:12px 8px 12px 16px;box-sizing:content-box}   /* xterm's fit reads CSS height: with border-box it counted the padding and fitted one row too many */
 .term .xterm-viewport{background:transparent!important}
 .term .xterm,.term .xterm *{cursor:text}
 .term-size{position:absolute;left:50%;top:50%;translate:-50% -50%;padding:8px 14px;border-radius:10px;pointer-events:none;
   background:rgba(0,0,0,.62);backdrop-filter:blur(8px);font:500 13px 'Fira Code',ui-monospace,monospace;color:#ffac2e;letter-spacing:.04em}
-.term-grip{position:absolute;right:0;bottom:0;width:18px;height:18px;cursor:nwse-resize;touch-action:none;
-  background:linear-gradient(135deg,transparent 52%,rgba(255,255,255,.2) 52% 57%,transparent 57% 68%,rgba(255,255,255,.2) 68% 73%,transparent 73%)}
+.term-grip{position:absolute;right:3px;bottom:3px;width:14px;height:14px;pointer-events:none;opacity:.55;transition:opacity .2s;   /* visual only: .rz-se does the work */
+  background:linear-gradient(135deg,transparent 45%,rgba(255,255,255,.45) 45% 52%,transparent 52% 66%,rgba(255,255,255,.45) 66% 73%,transparent 73%)}
 .term.max .term-grip{display:none}
 .term-dock{position:fixed;left:50%;bottom:20px;z-index:97;display:flex;align-items:center;gap:9px;padding:9px 16px;border-radius:99px;
   background:rgba(14,13,10,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.1);
@@ -618,7 +633,7 @@ body.term-resizing,body.term-resizing *{cursor:nwse-resize!important;user-select
 .term-dock span{color:rgba(255,255,255,.4)}
 @media(max-width:760px){   /* phones: a bottom sheet */
   .term{left:8px!important;top:auto!important;bottom:8px;width:calc(100% - 16px)!important;height:min(70vh,560px)!important}
-  .term-grip,.term-keys{display:none}
+  .term-grip,.term-keys,.term .rz{display:none}
 }
 .term-hint{font-size:12px;color:var(--muted);letter-spacing:.04em;transition:color .3s}
 .term-hint:hover{color:#fff}
@@ -636,4 +651,10 @@ kbd{font-family:'Fira Code',ui-monospace,monospace;font-size:11px;padding:1px 6p
 :focus-visible{outline:1px solid rgba(255,172,46,.9);outline-offset:4px}
 .skip{position:fixed;left:16px;top:16px;z-index:200;padding:10px 18px;border-radius:var(--radius-full);background:#fff;color:#000;font-size:13px;translate:0 -200%;transition:translate .3s var(--ease)}
 .skip:focus-visible{translate:0 0}
-.term .xterm-viewport{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.14) transparent}
+/* terminal scrollbar: a thin glass thumb, no track or arrow buttons */
+.term .xterm-viewport::-webkit-scrollbar{width:10px}
+.term .xterm-viewport::-webkit-scrollbar-track{background:transparent}
+.term .xterm-viewport::-webkit-scrollbar-button{display:none}
+.term .xterm-viewport::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:10px;border:3px solid transparent;background-clip:padding-box}
+.term .xterm-viewport::-webkit-scrollbar-thumb:hover{background-color:rgba(255,172,46,.45)}
+@supports not selector(::-webkit-scrollbar){ .term .xterm-viewport{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.14) transparent} }

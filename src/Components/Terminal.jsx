@@ -83,22 +83,29 @@ export default function Terminal() {
     setTimeout(() => win.current?.classList.remove('geo-anim'), 480);
   };
 
-  // pointer drag: move from the title bar, resize from the corner grip
+  // pointer drag: 'move' from the title bar, or resize from any edge / corner ('n', 'se', 'w', …)
   const drag = (kind) => (e) => {
     if (narrow() || max || e.button !== 0 || e.target.closest('button')) return;
     e.preventDefault();
+    e.stopPropagation();
     const start = { ...geo.current }, sx = e.clientX, sy = e.clientY;
-    document.body.classList.add(kind === 'move' ? 'term-moving' : 'term-resizing');
-    if (kind === 'size') setSize('');
+    document.body.dataset.termDrag = kind;   // keeps the right cursor while the pointer races ahead of the edge
+    if (kind !== 'move') setSize('');
     const move = (ev) => {
       const dx = ev.clientX - sx, dy = ev.clientY - sy;
-      geo.current = clampGeo(kind === 'move' ? { ...start, x: start.x + dx, y: start.y + dy } : { ...start, w: start.w + dx, h: start.h + dy });
+      if (kind === 'move') { geo.current = clampGeo({ ...start, x: start.x + dx, y: start.y + dy }); applyGeo(); return; }
+      const g = { ...start };
+      if (kind.includes('e')) g.w = Math.min(Math.max(start.w + dx, MIN_W), innerWidth - 8 - start.x);
+      if (kind.includes('s')) g.h = Math.min(Math.max(start.h + dy, MIN_H), innerHeight - 8 - start.y);
+      if (kind.includes('w')) { g.w = Math.min(Math.max(start.w - dx, MIN_W), start.x + start.w - 8); g.x = start.x + start.w - g.w; }   // right edge stays put
+      if (kind.includes('n')) { g.h = Math.min(Math.max(start.h - dy, MIN_H), start.y + start.h - 8); g.y = start.y + start.h - g.h; }
+      geo.current = g;
       applyGeo();
     };
     const up = () => {
       removeEventListener('pointermove', move);
       removeEventListener('pointerup', up);
-      document.body.classList.remove('term-moving', 'term-resizing');
+      delete document.body.dataset.termDrag;
       setSize(null);
       store.set(GEO_KEY, geo.current);
       shell.current?.focus();
@@ -123,7 +130,8 @@ export default function Terminal() {
         </div>
         <div className="term-host" ref={host} />
         {size && <div className="term-size">{size}</div>}
-        <div className="term-grip" onPointerDown={drag('size')} aria-hidden="true" />
+        {['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'].map((k) => <div key={k} className={`rz rz-${k}`} onPointerDown={drag(k)} aria-hidden="true" />)}
+        <div className="term-grip" aria-hidden="true" />
       </div>
       <button className={`term-dock${mode === 'min' ? ' show' : ''}`} onClick={() => setMode('open')} tabIndex={mode === 'min' ? 0 : -1}>
         <i />shamit.sh<span>minimised</span>
