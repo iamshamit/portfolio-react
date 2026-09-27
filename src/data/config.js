@@ -116,7 +116,7 @@ export const PORTFOLIO = {
     learning: "Going deeper into Go and edge/serverless backends (Cloudflare Workers, Hono), and building LLM features into real products, such as this very assistant on his portfolio.",
     workStyle: "He likes owning features end to end, from the database schema to the last pixel, and cares about the details users feel, like speed and polish.",
     more: [
-      "B.Tech in Computer Science & Engineering at GIET University, Gunupur (Rayagada district, Odisha), graduating 2026.",
+      "B.Tech in Computer Science & Engineering at GIET, Rayagada, Odisha, graduating 2026.",
       "Led a team at Smart India Hackathon 2024 that built a freelance marketplace (which became Nexara) and presented it to industry and government evaluators.",
       "Built a water-issue crowdsourcing Android app at the Water Tech Hackathon 2024.",
       "2,000+ GitHub contributions in the past year.",
