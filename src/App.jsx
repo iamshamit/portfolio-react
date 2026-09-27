@@ -2,6 +2,7 @@ import React from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
+import { flushSync } from 'react-dom';
 import { useNavigate, useLocation, Routes, Route } from 'react-router-dom';
 import './App.css';
 import './index.css';
@@ -9,8 +10,10 @@ import { PORTFOLIO } from './data/config';
 import { Cursor, HeroBackdrop, Nav, Overlay, SMMark } from './Components/Field';
 import { Hero, Marquee, About } from './Components/Hero';
 import { Featured, Gallery } from './Components/Work';
-import { Skills, Timeline, GitHub, Journal, Article, Contact, Footer } from './Components/Sections';
+import { Skills, Timeline, GitHub, Journal, Article, Contact, Footer, NotFound } from './Components/Sections';
+import Terminal from './Components/Terminal';
 import JournalPage from './Components/JournalPage';
+import { initFx } from './fx';
 
 function slugify(text) {
   return String(text).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -35,10 +38,19 @@ export default function App() {
   const journalLen = PORTFOLIO.journal.length;
   const [originPath, setOriginPath] = React.useState('/');
 
-  const openArticle = (i) => {
-    setOriginPath(window.location.pathname);
-    setArticle(i);
-    navigate(`/blog/${slugify(PORTFOLIO.journal[i].title)}`);
+  // src = the clicked row's title: it morphs into the article headline (View Transitions; plain open elsewhere)
+  const openArticle = (i, src) => {
+    const go = () => {
+      setOriginPath(window.location.pathname);
+      setArticle(i);
+      navigate(`/blog/${slugify(PORTFOLIO.journal[i].title)}`);
+    };
+    if (!src || !document.startViewTransition || matchMedia('(prefers-reduced-motion:reduce)').matches) return go();
+    const html = document.documentElement;
+    src.style.viewTransitionName = 'jtitle';
+    html.classList.add('vt');   // sheet skips its own fade so the morph lands on the final layout
+    document.startViewTransition(() => { src.style.viewTransitionName = ''; flushSync(go); })
+      .finished.finally(() => html.classList.remove('vt'));
   };
 
   const closeArticle = () => {
@@ -69,6 +81,16 @@ export default function App() {
       window.__lenis = lenis;
     }
 
+    // Away from the tab: the title calls you back and the favicon turns into the sphere
+    const icon = document.querySelector('link[rel="icon"]'), iconHref = icon && icon.getAttribute('href');
+    let homeTitle = document.title;
+    const onVis = () => {
+      if (document.hidden) { homeTitle = document.title; document.title = '✦ come back'; }
+      else document.title = homeTitle;
+      if (icon) icon.setAttribute('href', document.hidden ? '/sphere.svg' : iconHref);
+    };
+    document.addEventListener('visibilitychange', onVis);
+
     // Anchor / data-scroll smooth jumps
     const onAnchorClick = (e) => {
       const a = e.target.closest('[data-scroll]');
@@ -78,7 +100,7 @@ export default function App() {
       if (!el) return;
       e.preventDefault();
       const top = id === 'top' ? 0 : el.getBoundingClientRect().top + window.scrollY;
-      if (lenis) lenis.scrollTo(top, { duration: 1.4 });
+      if (lenis) lenis.scrollTo(top, { duration: 1.4, force: true });   // force: menu links fire while the menu still has Lenis stopped
       else window.scrollTo({ top, behavior: 'smooth' });
     };
     document.addEventListener('click', onAnchorClick);
@@ -121,6 +143,7 @@ export default function App() {
     document.querySelectorAll('.reveal,[data-stagger]').forEach((el) => io.observe(el));
 
     if (reduce) return () => {
+      document.removeEventListener('visibilitychange', onVis);
       document.removeEventListener('click', onAnchorClick);
       removeEventListener('scroll', onScroll);
     };
@@ -244,6 +267,11 @@ export default function App() {
       });
     }
 
+    // fx setup (splitting, triggers) waits until the intro is over: nobody can scroll during it, and it keeps the intro smooth
+    const startFx = () => { initFx({ isMobile }); ScrollTrigger.refresh(); };
+    if (introTl) introTl.eventCallback('onComplete', ((done) => () => { done(); startFx(); })(introTl.eventCallback('onComplete')));
+    else (window.requestIdleCallback || setTimeout)(startFx, { timeout: 1200 });
+
     ScrollTrigger.refresh();
     if (lenis) lenis.resize();
     addEventListener('load', () => { ScrollTrigger.refresh(); if (lenis) lenis.resize(); });
@@ -251,15 +279,17 @@ export default function App() {
     setTimeout(() => { ScrollTrigger.refresh(); if (lenis) lenis.resize(); }, 1500);
 
     return () => {
+      document.removeEventListener('visibilitychange', onVis);
       document.removeEventListener('click', onAnchorClick);
       removeEventListener('scroll', onScroll);
       skipEvents.forEach((t) => removeEventListener(t, skipIntro));
       ScrollTrigger.getAll().forEach((st) => st.kill());
+      window.__mid = 0;
       if (lenis) lenis.destroy();
     };
   }, []);
 
-  const isJournal = location.pathname === '/journal';
+  const isHome = location.pathname === '/' || location.pathname.startsWith('/blog/');
   const hero = PORTFOLIO.hero;
 
   return (
@@ -269,14 +299,17 @@ export default function App() {
       {intro && <div className="intro-mark" aria-hidden="true"><SMMark size={80} /></div>}
       <div className="grain" />
       <div className="progress" data-progress="" />
-      {!isJournal && <Nav onOpen={() => setMenu(true)} />}
-      {!isJournal && <Overlay open={menu} onClose={() => setMenu(false)} />}
+      {isHome && <a className="skip" href="#about">Skip to content</a>}
+      {isHome && <Nav onOpen={() => setMenu(true)} />}
+      {isHome && <Overlay open={menu} onClose={() => setMenu(false)} />}
+      <Terminal />
 
       <Routes>
         <Route path="/journal" element={
           <JournalPage openArticle={openArticle} />
         } />
-        <Route path="*" element={
+        {/* one catch-all keeps home mounted between / and /blog/:slug (the article is an overlay on it); anything else is the void */}
+        <Route path="*" element={isHome ? (
           <>
             <main>
               <Hero hero={hero} />
@@ -292,7 +325,7 @@ export default function App() {
             </main>
             <Footer />
           </>
-        } />
+        ) : <NotFound />} />
       </Routes>
 
       <Article index={article} onClose={closeArticle} onNav={navArticle} />

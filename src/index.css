@@ -1,7 +1,7 @@
 /* Portfolio CSS — General Sans + Raleway loaded via <link> in index.html */
 
 :root{
-  --bg:#000; --fg:#fff; --muted:#6d6d6d; --subtle:#636363;
+  --bg:#000; --fg:#fff; --muted:#7a7a7a; --subtle:#636363;
   --border:rgba(255,255,255,.30); --faint:rgba(255,255,255,.12);
   --hair:rgba(255,255,255,.07);
   --roo:'General Sans','Roobert',ui-sans-serif,system-ui,sans-serif;
@@ -223,7 +223,7 @@ body.cursor-view .cursor-ring{width:84px;height:84px}
 
 .marquee{position:relative;z-index:1;background:#000;padding:30px 0;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);overflow:hidden;white-space:nowrap}
 .marquee .track{display:inline-flex;gap:42px;will-change:transform}
-.marquee .track span{font-size:clamp(26px,3.4vw,46px);font-weight:300;color:rgba(255,255,255,.3);letter-spacing:-.01em}
+.marquee .track span{font-size:clamp(26px,3.4vw,46px);font-weight:300;color:rgba(255,255,255,.38);letter-spacing:-.01em}
 .marquee .track .dot{color:rgba(255,172,46,.6)}
 
 .featured{position:relative;z-index:1;background:#000}
@@ -535,3 +535,105 @@ body:has(.contact:hover) .cursor-ring{opacity:0}   /* the WebGL lens is the curs
   .article-body.has-toc{display:block;max-width:720px}
   .a-toc-sidebar{display:none}
 }
+
+/* ── fx layer (src/fx.js) ─────────────────────────────────────── */
+/* split headings: line masks get room for descenders (g, y) without shifting layout */
+[data-split] .sl-mask{padding-bottom:.16em;margin-bottom:-.16em}
+
+/* companion sphere: middle sections go see-through onto the dark WebGL void (desktop, set by fx.companion) */
+html.orb :is(.section,.featured,.gallery-wrap){background:transparent}
+html.orb .contact::before{display:none}   /* the void above is already dark: the black fade-in would draw a seam */
+
+.timeline{position:relative}
+.tl-rail{position:absolute;left:-30px;top:0;bottom:0;width:1px;background:var(--faint);pointer-events:none}
+.tl-rail i{position:absolute;inset:0;background:linear-gradient(#a0e0ab,#ffac2e 50%,#a52d25);transform-origin:top;transform:scaleY(0)}
+@media(max-width:680px){ .tl-rail{left:-12px} }
+
+.glare{position:absolute;inset:0;z-index:4;pointer-events:none;opacity:0;transition:opacity .5s var(--ease);
+  background:radial-gradient(circle at var(--gx,50%) var(--gy,50%), rgba(255,236,210,.14), transparent 46%)}
+:is(.feat-vis,.gvis):hover > .glare{opacity:1}
+
+/* journal row title → article headline morph */
+.article.open .a-title{view-transition-name:jtitle}
+html.vt :is(.article-sheet,.article-scrim){transition:none}
+::view-transition-group(jtitle){animation-duration:.75s;animation-timing-function:cubic-bezier(.2,.7,.2,1)}
+::view-transition-old(root),::view-transition-new(root){animation-duration:.45s}
+
+/* menu opens into the live sphere (fluid.js swells it; html.gl = WebGL is up, else the CSS field fallback stays) */
+html.gl .overlay{background:transparent}
+html.gl .overlay .field{display:none}
+:is(main,.footer){transition:opacity .7s var(--ease) .2s}
+html.menu-open :is(main,.footer){opacity:0;transition:opacity .45s var(--ease)}
+.nav{transition:transform .5s var(--ease),opacity .4s var(--ease)}
+html.menu-open .nav{opacity:0;pointer-events:none}   /* the overlay is see-through now */
+
+/* live clock status under the hero location */
+.hero .hello .status{color:rgba(255,255,255,.5)}
+
+/* hidden terminal (` or ~): a floating glass window (Terminal.jsx sets left/top/width/height) */
+.term{position:fixed;z-index:97;display:flex;flex-direction:column;border-radius:14px;overflow:hidden;
+  background:linear-gradient(180deg,rgba(26,23,17,.8),rgba(9,9,7,.86));
+  backdrop-filter:blur(22px) saturate(1.3);-webkit-backdrop-filter:blur(22px) saturate(1.3);
+  border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 40px 120px -20px rgba(0,0,0,.85),0 0 0 1px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06),0 0 90px -30px rgba(255,172,46,.28);
+  opacity:0;visibility:hidden;transform:translateY(14px) scale(.96);filter:blur(8px);transform-origin:50% 60%;
+  transition:opacity .35s var(--ease),transform .5s var(--ease),filter .35s var(--ease),visibility 0s .5s}
+.term.open{opacity:1;visibility:visible;transform:none;filter:none;
+  transition:opacity .3s var(--ease),transform .55s cubic-bezier(.2,1.25,.3,1),filter .3s var(--ease)}
+.term.min{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.08);filter:blur(3px);
+  transition:opacity .4s var(--ease) .12s,transform .55s cubic-bezier(.6,0,.35,1),filter .4s,visibility 0s .55s}
+.term.max{left:16px!important;top:16px!important;width:calc(100% - 32px)!important;height:calc(100% - 32px)!important}
+.term.geo-anim{transition:left .45s var(--ease),top .45s var(--ease),width .45s var(--ease),height .45s var(--ease),opacity .3s,transform .5s,filter .3s}
+.term::before{content:"";position:absolute;inset:0 0 auto;height:1px;pointer-events:none;   /* warm sheen along the top edge */
+  background:linear-gradient(90deg,transparent,rgba(255,200,120,.4),transparent)}
+.term,.term *{cursor:auto}   /* a real terminal gets real cursors; the custom one steps aside */
+body:has(.term.open:hover) :is(.cursor,.cursor-ring,.cursor-label){opacity:0}
+.term-bar{flex:none;height:42px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 14px;
+  border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.015);cursor:grab;user-select:none;touch-action:none}
+body.term-moving,body.term-moving *{cursor:grabbing!important;user-select:none}
+body.term-resizing,body.term-resizing *{cursor:nwse-resize!important;user-select:none}
+.lights{display:flex;gap:8px}
+.tl{width:12px;height:12px;border-radius:50%;display:grid;place-items:center;cursor:default;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.35)}
+.tl-close{background:#ff5f57}.tl-min{background:#febc2e}.tl-max{background:#28c840}
+.tl::after{font:700 9px/1 ui-sans-serif,system-ui,sans-serif;color:rgba(0,0,0,.55);opacity:0;transition:opacity .15s}
+.tl-close::after{content:"×";font-size:11px}.tl-min::after{content:"−"}.tl-max::after{content:"+"}
+.lights:hover .tl::after,.tl:focus-visible::after{opacity:1}
+.term-title{font-size:12px;letter-spacing:.04em;color:rgba(255,255,255,.55);white-space:nowrap}
+.term-keys{justify-self:end;color:rgba(255,255,255,.35)}
+.term-keys kbd{font-size:10px;border-color:rgba(255,255,255,.12)}
+.term-host{flex:1;min-height:0;padding:12px 8px 12px 16px}
+.term .xterm-viewport{background:transparent!important}
+.term .xterm,.term .xterm *{cursor:text}
+.term-size{position:absolute;left:50%;top:50%;translate:-50% -50%;padding:8px 14px;border-radius:10px;pointer-events:none;
+  background:rgba(0,0,0,.62);backdrop-filter:blur(8px);font:500 13px 'Fira Code',ui-monospace,monospace;color:#ffac2e;letter-spacing:.04em}
+.term-grip{position:absolute;right:0;bottom:0;width:18px;height:18px;cursor:nwse-resize;touch-action:none;
+  background:linear-gradient(135deg,transparent 52%,rgba(255,255,255,.2) 52% 57%,transparent 57% 68%,rgba(255,255,255,.2) 68% 73%,transparent 73%)}
+.term.max .term-grip{display:none}
+.term-dock{position:fixed;left:50%;bottom:20px;z-index:97;display:flex;align-items:center;gap:9px;padding:9px 16px;border-radius:99px;
+  background:rgba(14,13,10,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 12px 40px rgba(0,0,0,.5);font:500 12px 'Fira Code',ui-monospace,monospace;color:#e6e3dc;
+  translate:-50% 30px;opacity:0;pointer-events:none;transition:translate .5s var(--ease),opacity .35s}
+.term-dock.show{translate:-50% 0;opacity:1;pointer-events:auto;transition-delay:.35s}
+.term-dock i{width:7px;height:7px;border-radius:50%;background:#ffac2e;box-shadow:0 0 10px #ffac2e}
+.term-dock span{color:rgba(255,255,255,.4)}
+@media(max-width:760px){   /* phones: a bottom sheet */
+  .term{left:8px!important;top:auto!important;bottom:8px;width:calc(100% - 16px)!important;height:min(70vh,560px)!important}
+  .term-grip,.term-keys{display:none}
+}
+.term-hint{font-size:12px;color:var(--muted);letter-spacing:.04em;transition:color .3s}
+.term-hint:hover{color:#fff}
+kbd{font-family:'Fira Code',ui-monospace,monospace;font-size:11px;padding:1px 6px;border:1px solid var(--faint);border-radius:4px;margin:0 2px}
+
+/* 404: the sphere drifts alone in the void */
+.lost{position:relative;z-index:1;min-height:100vh;min-height:100svh;display:flex;align-items:center}
+.lost .eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:28px}
+.lost h1{font-weight:400;font-size:clamp(48px,9vw,132px);line-height:.95;letter-spacing:-.035em;max-width:9ch}
+.lost h1 .ital{font-family:var(--ral);font-style:italic}
+.lost p{max-width:42ch;margin:34px 0 40px;font-size:17px;line-height:1.6;color:rgba(255,255,255,.62)}
+@media(max-width:760px){ .lost{align-items:flex-end;padding-bottom:18vh} }
+
+/* keyboard: visible focus everywhere, and a way past the hero */
+:focus-visible{outline:1px solid rgba(255,172,46,.9);outline-offset:4px}
+.skip{position:fixed;left:16px;top:16px;z-index:200;padding:10px 18px;border-radius:var(--radius-full);background:#fff;color:#000;font-size:13px;translate:0 -200%;transition:translate .3s var(--ease)}
+.skip:focus-visible{translate:0 0}
+.term .xterm-viewport{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.14) transparent}

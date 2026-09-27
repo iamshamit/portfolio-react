@@ -1,16 +1,18 @@
 import React from 'react';
+import gsap from 'gsap';
 import { PORTFOLIO } from '../data/config';
 import { SMMark } from './Field';
 import { BlockRenderer, Toc, TocMobile } from './JournalBlocks';
 import { Link } from 'react-router-dom';
+import LocalTime from './LocalTime';
 
 export function Skills() {
   return (
     <section className="section" id="skills" data-screen-label="Skills">
       <div className="well">
-        <div className="sec-head">
+        <div className="sec-head" data-orb="84" data-orb-x=".72">
           <div className="idx"><span className="bar" />Capabilities</div>
-          <h2 className="reveal">The toolkit.</h2>
+          <h2 data-split="">The toolkit.</h2>
           <div className="note">Frontend → Backend → AI</div>
         </div>
         <div className="skills reveal" data-stagger="">
@@ -34,10 +36,11 @@ export function Timeline() {
       <div className="well">
         <div className="sec-head">
           <div className="idx"><span className="bar" />Path</div>
-          <h2 className="reveal">Experience & education.</h2>
+          <h2 data-split="">Experience &amp; education.</h2>
           <div className="note">Most recent first</div>
         </div>
         <div className="timeline reveal" data-stagger="">
+          <div className="tl-rail" data-orb="15" data-orb-follow="" aria-hidden="true"><i /></div>
           {PORTFOLIO.timeline.map((t, i) => (
             <div className="tl-row" key={i} data-cursor="">
               <div className="when">{t.when}</div>
@@ -75,6 +78,28 @@ function useGitHubLive() {
   return live;
 }
 
+// Counts up from 0 the first time it's seen; later value changes (live data) glide from the current number
+function Count({ v }) {
+  const ref = React.useRef(null), cur = React.useRef(0), seen = React.useRef(false);
+  React.useEffect(() => {
+    const el = ref.current, m = String(v).match(/^([\d,]+)(.*)$/);
+    if (!m || matchMedia('(prefers-reduced-motion:reduce)').matches) { el.textContent = v; return; }
+    const fmt = (n) => Math.round(n).toLocaleString('en-IN') + m[2];
+    const o = { n: cur.current }, to = +m[1].replace(/,/g, '');
+    let tw;
+    const run = () => {
+      seen.current = true;
+      tw = gsap.to(o, { n: to, duration: 2.2, ease: 'expo.out', onUpdate: () => { cur.current = o.n; el.textContent = fmt(o.n); } });
+    };
+    el.textContent = fmt(o.n);
+    if (seen.current) { run(); return () => tw.kill(); }
+    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { io.disconnect(); run(); } }, { threshold: 0.6 });
+    io.observe(el);
+    return () => { io.disconnect(); if (tw) tw.kill(); };
+  }, [v]);
+  return <span ref={ref} />;
+}
+
 export function GitHub() {
   const g = PORTFOLIO.github;
   const live = useGitHubLive();
@@ -89,12 +114,12 @@ export function GitHub() {
         </div>
         <div className="gh-inner">
           <div className="gh-l reveal">
-            <h2>Built in the open.</h2>
+            <h2 data-split="">Built in the open.</h2>
             <p>{g.blurb}</p>
             <div className="gh-stats" data-stagger="">
               {g.stats.map((s, i) => (
                 <div key={i}>
-                  <div className="n">{stat(s)}</div>
+                  <div className="n"><Count v={stat(s)} /></div>
                   <div className="l">{s.l}</div>
                 </div>
               ))}
@@ -103,7 +128,7 @@ export function GitHub() {
               View GitHub <span>→</span>
             </a>
           </div>
-          <figure className="gh-r reveal">
+          <figure className="gh-r reveal" data-orb="60" data-orb-x=".5" data-orb-y="-.45">
             {/* real contributions; the grid keeps its footprint while loading so nothing jumps */}
             <div className="contrib" role="img" aria-label={live.contrib != null ? `${live.contrib} GitHub contributions in the last year` : 'GitHub contributions, loading'}>
               {Array.from({ length: HEAT_DAYS }, (_, i) => {
@@ -130,6 +155,7 @@ export function Contact() {
   const copy = () => {
     if (!navigator.clipboard) return openMail();
     navigator.clipboard.writeText(email).then(() => {
+      if (navigator.vibrate) navigator.vibrate(12);   // phones: a tiny tap to confirm
       setCopied(true);
       clearTimeout(timer.current);
       timer.current = setTimeout(() => setCopied(false), 1800);
@@ -169,7 +195,7 @@ export function Contact() {
     <section className="contact" id="contact" data-screen-label="Contact" ref={ref}>
       <div className="well">
         <div className="eyebrow reveal">Let&apos;s build something</div>
-        <h2 className="reveal">
+        <h2 data-split="">
           Say <span className="ital">hello</span>.
         </h2>
         <div className="email-wrap reveal">
@@ -191,20 +217,55 @@ export function Contact() {
   );
 }
 
+// 404: the sphere drifts alone in the void (fluid.js companion mode, steered here instead of by page anchors)
+export function NotFound() {
+  React.useEffect(() => {
+    const T = (window.__orbT = { x: 0.7, y: 0.5, r: 0.16 });
+    let mx = 0.5, my = 0.5, raf;
+    const move = (e) => { mx = e.clientX / innerWidth; my = 1 - e.clientY / innerHeight; };
+    const loop = (t) => {
+      const s = t / 1000, fine = innerWidth > 760;
+      T.x = (fine ? 0.7 : 0.5) + 0.12 * Math.sin(s * 0.21) + (mx - 0.5) * 0.12;
+      T.y = (fine ? 0.5 : 0.25) + 0.08 * Math.sin(s * 0.33 + 1) + (my - 0.5) * 0.1;
+      T.r = (fine ? 150 : 90) / innerHeight;
+      raf = requestAnimationFrame(loop);
+    };
+    window.__mid = 1;
+    addEventListener('pointermove', move);
+    raf = requestAnimationFrame(loop);
+    const title = document.title;
+    document.title = 'Lost in the void · Shamit Mishra';
+    return () => { window.__mid = 0; cancelAnimationFrame(raf); removeEventListener('pointermove', move); document.title = title; };
+  }, []);
+  return (
+    <main className="lost">
+      <div className="well">
+        <div className="eyebrow">Error 404</div>
+        <h1>Lost in the <span className="ital">void</span>.</h1>
+        <p>This page drifted off somewhere between two frames. The sphere is still here, though, and it knows the way back.</p>
+        <a className="btn-ghost" href="/">Take me home <span>→</span></a>
+      </div>
+    </main>
+  );
+}
+
 export function Footer() {
   return (
     <footer className="footer">
       <div className="well">
         <div className="top">
-          <div className="brand">{PORTFOLIO.name}</div>
+          <div className="brand" role="img" aria-label={PORTFOLIO.name}>{PORTFOLIO.name}</div>
           <div className="meta">
             <div>{PORTFOLIO.role}</div>
-            <div>{PORTFOLIO.location}</div>
+            <LocalTime>{(t) => <div>{t.time} in India · {t.status}</div>}</LocalTime>
             <div>Designed in the dark · Built with care</div>
           </div>
         </div>
         <div className="legal">
           <span>© {new Date().getFullYear()} {PORTFOLIO.fullName}</span>
+          <button className="term-hint" onClick={() => dispatchEvent(new Event('open-terminal'))}>
+            Press <kbd>~</kbd> for a terminal
+          </button>
         </div>
       </div>
     </footer>
@@ -219,15 +280,15 @@ export function Journal({ onOpen }) {
   return (
     <section className="section" id="journal" data-screen-label="Journal">
       <div className="well">
-        <div className="sec-head">
+        <div className="sec-head" data-orb="84" data-orb-x=".74">
           <div className="idx"><span className="bar" />Journal</div>
-          <h2 className="reveal">Notes &amp; writing.</h2>
+          <h2 data-split="">Notes &amp; writing.</h2>
           <div className="note">{PORTFOLIO.journal.length} {PORTFOLIO.journal.length === 1 ? 'entry' : 'entries'}</div>
         </div>
         <div className="journal reveal" data-stagger="">
           {shown.map((post) => (
             <button className="jrow" key={post.num} data-cursor="view"
-              onClick={() => onOpen(PORTFOLIO.journal.indexOf(post))}>
+              onClick={(e) => onOpen(PORTFOLIO.journal.indexOf(post), e.currentTarget.querySelector('.jtitle'))}>
               <div className="jnum">{post.num}</div>
               <div className="jmain">
                 <div className="jtitle">{post.title}</div>

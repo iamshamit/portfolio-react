@@ -1,0 +1,8 @@
+name = "shamit-portfolio-api"
+main = "index.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+GH_USER = "iamshamit"
+# the site's own origins (comma-separated); add your real domain here before deploying
+ALLOWED_ORIGINS = "https://iamshamit.com,https://www.iamshamit.com,https://shamit.is-a.dev,http://localhost:5173"

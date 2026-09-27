@@ -1,6 +1,7 @@
 import React from 'react';
 import { PORTFOLIO } from '../data/config';
 import { HeroAtmosphere } from './Field';
+import LocalTime from './LocalTime';
 
 export function Hero({ hero }) {
   const h = hero || PORTFOLIO.hero;
@@ -23,9 +24,10 @@ export function Hero({ hero }) {
         <span className="line" />Scroll to explore
       </div>
       <div className="hello">
-        {PORTFOLIO.location.split('·').map((s, i) => (
-          <div key={i}>{s.trim()}</div>
-        ))}
+        <LocalTime>{(t) => (<>
+          <div>{PORTFOLIO.location.split('·')[0].trim()} · {t.time}</div>
+          <div className="status">{t.status}</div>
+        </>)}</LocalTime>
       </div>
     </header>
   );
@@ -57,7 +59,7 @@ export function About() {
           <div className="idx"><span className="bar" />About</div>
           <div className="note">{PORTFOLIO.role}</div>
         </div>
-        <div className="about">
+        <div className="about" data-orb="64" data-orb-x=".2" data-orb-y="1.15">
           <div className="col-l">
             <p className="lede reveal">
               I treat the browser as a{' '}

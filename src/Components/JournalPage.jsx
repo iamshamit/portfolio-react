@@ -43,7 +43,7 @@ export default function JournalPage({ openArticle }) {
                 key={post.num}
                 className="jrow"
                 data-cursor="view"
-                onClick={() => openArticle(realIndex)}
+                onClick={(e) => openArticle(realIndex, e.currentTarget.querySelector('.jtitle'))}
               >
                 <div className="jnum">{post.num}</div>
                 <div className="jmain">

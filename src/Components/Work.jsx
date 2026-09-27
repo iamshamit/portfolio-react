@@ -80,19 +80,19 @@ function Mock({ p }) {
   );
 }
 
-function Feat({ p }) {
+function Feat({ p, i }) {
   return (
     <article className="feat" data-screen-label={`Project ${p.num}`}>
-      <a className="feat-vis" data-cursor="view" data-parallax="" href={p.url} target="_blank" rel="noreferrer" style={{ display:'block', textDecoration:'none' }}>
+      <a className="feat-vis" data-cursor="view" data-parallax="" data-orb="56" data-orb-x={i % 2 ? 1 : 0} data-orb-y="0" href={p.url} target="_blank" rel="noreferrer" style={{ display:'block', textDecoration:'none' }}>
         {!FEATURED_UI[p.name] && <div className="g" style={{ background: GRAD[p.gradient] }} />}
         <Mock p={p} />
 
         <div className="vis-grain" />
-
+        <i className="glare" />
       </a>
       <div className="feat-txt">
         <div className="ft-tag reveal">{p.role}</div>
-        <h3 className="reveal">{p.name}</h3>
+        <h3 data-split="">{p.name}</h3>
         <div className="tagline reveal">{p.tagline}</div>
         <p className="desc reveal">{p.desc}</p>
         <div className="stack reveal" data-stagger="">
@@ -111,13 +111,13 @@ export function Featured() {
   return (
     <section className="featured" id="work">
       <div className="well" style={{ paddingTop: '150px' }}>
-        <div className="sec-head">
+        <div className="sec-head" data-orb="84" data-orb-x=".74">
           <div className="idx"><span className="bar" />Selected Work</div>
-          <h2 className="reveal">Things I built that move.</h2>
+          <h2 data-split="">Things I built that move.</h2>
           <div className="note">{PORTFOLIO.featured.length} featured · {new Date().getFullYear()}</div>
         </div>
       </div>
-      {PORTFOLIO.featured.map((p) => <Feat key={p.num} p={p} />)}
+      {PORTFOLIO.featured.map((p, i) => <Feat key={p.num} p={p} i={i} />)}
     </section>
   );
 }
@@ -127,9 +127,9 @@ export function Gallery() {
     <section className="gallery-wrap" id="gallery" data-gallery="">
       <div className="gallery-sticky">
         <div className="gallery-track" data-gallery-track="">
-          <div className="gallery-intro">
+          <div className="gallery-intro" data-orb="46" data-orb-x=".78" data-orb-y=".16">
             <div className="idx">More</div>
-            <h2>And a few more.</h2>
+            <h2 data-split="">And a few more.</h2>
             <p>Side projects, experiments, and tools. Drag or scroll →</p>
           </div>
           {PORTFOLIO.gallery.map((p) => (
@@ -137,6 +137,7 @@ export function Gallery() {
               <div className="gvis">
                 {GALLERY_UI[p.name] ?? <div className="g" style={{ background: GRAD[p.gradient] }} />}
                 <div className="vis-grain" />
+                <i className="glare" />
               </div>
               <div className="gmeta">
                 <div>

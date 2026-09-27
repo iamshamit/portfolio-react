@@ -1,4 +1,5 @@
 import React from 'react';
+import gsap from 'gsap';
 import { PORTFOLIO } from '../data/config';
 
 export function Field() {
@@ -171,12 +172,31 @@ export function Nav({ onOpen }) {
 }
 
 export function Overlay({ open, onClose }) {
+  const ref = React.useRef(null);
+  // the live sphere swells to fill the screen (fluid.js reads window.__menu), the page fades out, links rise inside it
+  React.useEffect(() => {
+    if (!open && !window.__menu) return;   // first mount: nothing to undo
+    const html = document.documentElement, L = window.__lenis;
+    html.classList.toggle('menu-open', open);
+    if (L) { if (open) L.stop(); else L.start(); }
+    const o = { v: window.__menu || 0 };
+    const tw = gsap.to(o, { v: open ? 1 : 0, duration: open ? 1.1 : 0.8, ease: 'power3.inOut', onUpdate: () => { window.__menu = o.v; } });
+    let rise;
+    if (open && !matchMedia('(prefers-reduced-motion:reduce)').matches) {
+      rise = gsap.fromTo(ref.current.querySelectorAll('.links a, .ov-side > *'), { y: 60, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.9, ease: 'expo.out', stagger: 0.06, delay: 0.4, clearProps: 'opacity,transform' });
+    }
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    if (open) addEventListener('keydown', onKey);
+    return () => { tw.kill(); if (rise) rise.kill(); removeEventListener('keydown', onKey); };
+  }, [open]);
+
   const links = [
     { l: 'Home', t: 'top' }, { l: 'About', t: 'about' }, { l: 'Work', t: 'work' },
     { l: 'Skills', t: 'skills' }, { l: 'Journal', t: 'journal' }, { l: 'Contact', t: 'contact' },
   ];
   return (
-    <div className={`overlay${open ? ' open' : ''}`}>
+    <div className={`overlay${open ? ' open' : ''}`} ref={ref} {...(!open && { inert: '' })}>   {/* inert: closed menu links can't be tabbed into */}
       <Field />
       <button className="close" onClick={onClose} aria-label="Close menu">×</button>
       <div className="ov-inner">

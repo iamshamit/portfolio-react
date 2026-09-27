@@ -10,8 +10,10 @@
 // (renders a single static frame).
 // ============================================================
 (function (global) {
-  // Deep Ocean + preset color triplets (0..1 rgb)
+  // colour triplets per preset: c1 = mid tint, c2 = crest tint, c3 = shadow base (0..255 rgb)
+  // silk (default): monopo-style black / sage / caramel
   const PRESETS = {
+    silk:   [[104,120,92],[210,158,98],[24,28,20]],
     ocean:  [[160,224,171],[255,172,46],[165,45,37]],
     teal:   [[73,197,182],[47,142,130],[236,208,111]],
     aurora: [[160,224,171],[73,197,182],[79,124,255]],
@@ -35,6 +37,8 @@
   uniform float u_outside;  // 0 = world visible only through the sphere (intro portal), 1 = normal
   uniform vec2  u_stretch;  // outro lens: squash-and-stretch along travel (aspect-corrected dir * amount)
   uniform float u_ripple;   // outro lens: click ripple age 0..1, <0 = none
+  uniform float u_leak;     // 0..1 faint light leaks at the edges of the dark sections
+  uniform float u_scroll;   // page scroll in viewport heights (the leaks slide with it)
 
   #ifdef MOBILE
   // Hoskins hash12: small multipliers keep it stable under mobile GPU rounding (the desktop hash seams noise cells on phones)
@@ -78,7 +82,8 @@
     float t = u_time * 0.05;
     vec2 m = u_warp;
 
-    vec3 col = field(uv, t, m) * u_outside;
+    vec3 col = vec3(0.0);
+    if(u_outside > 0.001) col = field(uv, t, m) * u_outside;   // void (companion/outro): skip the full-screen field
 
     // ---- glass sphere ----
     vec2 d = uv - u_sphere; d.x *= u_aspect;
@@ -123,13 +128,20 @@
     col *= smoothstep(1.85, 0.2, length(uv - 0.5));
     col *= mix(0.8, 1.0, smoothstep(0.0, 0.55, uv.x + (1.0-uv.y)*0.08));
 
-    // pulsing amber light source near the right edge (small bloom, not a wash)
-    vec2 ld = uv - vec2(0.96, 0.4); ld.x *= u_aspect;
-    float lg = exp(-dot(ld,ld) * 8.5);
-    col += mix(u_c2, vec3(1.0,0.78,0.4), 0.4) * lg * u_pulse * 0.22 * u_outside;
-
-    // very faint warm haze lifting the lower third
-    col += u_c2 * 0.012 * smoothstep(0.0, 1.0, uv.y) * u_pulse * u_outside;
+    // light leaks: two very faint, wide glows off the left/right edges, sliding with scroll,
+    // just enough that the dark middle sections never read as flat black
+    if(u_leak > 0.001){
+      for(int i=0;i<2;i++){
+        float fi = float(i);
+        float ph = u_scroll*0.55 + t*3.0 + fi*3.1;
+        vec2 c = fi < 0.5 ? vec2(-0.12, 0.5 + 0.5*sin(ph)) : vec2(1.12, 0.5 + 0.5*sin(ph*0.8 + 2.0));
+        vec2 dl = uv - c; dl.x *= u_aspect;
+        dl = mat2(0.8, -0.6, 0.6, 0.8) * dl;
+        dl.y *= 1.4;
+        float g = exp(-dot(dl, dl) * 4.0);
+        col += mix(u_c1, u_c2, smoothstep(0.15, 0.85, g)) * g * 0.18 * u_leak * u_pulse;
+      }
+    }
 
     col = pow(col, vec3(0.98));
     col *= u_fade;
@@ -153,6 +165,7 @@
       (matchMedia('(pointer:coarse)').matches ? '#define MOBILE\n' : '') + FRAG));
     gl.linkProgram(prog); gl.useProgram(prog);
     global.__fluidOk = true;   // App only plays the sphere intro when this is set
+    document.documentElement.classList.add('gl');   // CSS: menu opens into the live sphere instead of the CSS fallback
 
     const buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
@@ -165,7 +178,7 @@
     const u = { res:U('u_res'), time:U('u_time'), aspect:U('u_aspect'), warp:U('u_warp'),
                 sphere:U('u_sphere'), sphereR:U('u_sphereR'), c1:U('u_c1'), c2:U('u_c2'), c3:U('u_c3'),
                 pulse:U('u_pulse'), fade:U('u_fade'), outside:U('u_outside'),
-                stretch:U('u_stretch'), ripple:U('u_ripple') };
+                stretch:U('u_stretch'), ripple:U('u_ripple'), leak:U('u_leak'), scroll:U('u_scroll') };
 
     const reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
     const touch = matchMedia('(pointer:coarse)').matches;
@@ -190,6 +203,20 @@
       ty = (e.clientY / innerHeight - 0.5) * 2;
     }
     addEventListener('mousemove', onMove, { passive:true });
+    // phones: tilting moves the sphere and the liquid (iOS asks permission on the first tap)
+    function onTilt(e){
+      if(e.gamma == null) return;
+      tx = Math.max(-2, Math.min(2, e.gamma / 20));
+      ty = Math.max(-2, Math.min(2, (e.beta - 45) / 20));
+    }
+    function askTilt(){
+      const D = window.DeviceOrientationEvent;
+      if(D && typeof D.requestPermission === 'function') D.requestPermission().then((r) => { if(r === 'granted') addEventListener('deviceorientation', onTilt); }).catch(() => {});
+    }
+    if(touch){
+      addEventListener('deviceorientation', onTilt);
+      addEventListener('touchend', askTilt, { once:true });
+    }
 
     const start = performance.now();
     // outro lens: spring state (x/y in uv, r in uv-y units) — see the outro block in frame()
@@ -197,13 +224,14 @@
     const lin = (a,b,x)=>Math.max(0, Math.min(1, (x-a)/(b-a)));
     const smooth = (a,b,x)=>{ const t = lin(a,b,x); return t*t*(3-2*t); };
     let raf, running = true;
+    // read once: getComputedStyle every frame forces a style recalc mid-scroll (nothing changes --motion at runtime)
+    const motion = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--motion')) || 1;
     function frame(){
       if(!running) return;
-      if(window.__heroInView === false && !window.__outroInView){ raf = requestAnimationFrame(frame); return; }  // pause when neither hero nor contact is on screen
+      if(window.__heroInView === false && !window.__outroInView && !(window.__mid > 0) && !(window.__menu > 0)){ raf = requestAnimationFrame(frame); return; }  // pause when neither hero nor contact is on screen
       syncSize();   // re-sync buffer to live client size (survives pin reflows)
       mx += (tx - mx) * 0.05; my += (ty - my) * 0.05;
       const cols = PRESETS[document.documentElement.dataset.grad] || PRESETS.ocean;
-      const motion = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--motion')) || 1;
       const time = reduce ? 12.0 : (performance.now() - start) / 1000 * motion;
       const sc = reduce ? 0 : (window.__heroScroll || 0);   // 0..1 hero scroll progress
 
@@ -244,17 +272,25 @@
         outside = lin(0.6, 0.63, ip);                                 // flips while the sphere covers the screen
       }
 
-      // ---- outro "hold the portal": window.__outro 0→1 as Contact scrolls in ----
-      // the world goes dark and the sphere becomes a lens on a jelly spring that follows window.__lens
+      // ---- companion + outro: one jelly spring (lx,ly,lr) carries the sphere out of the hero and down the page ----
+      // window.__mid 0→1 as About arrives (fx.js): the world goes dark and the sphere docks on window.__orbT
+      //   ({x,y,r} in uv, measured by fx.js in the scroll handler: no layout reads in here)
+      // window.__outro 0→1 as Contact scrolls in: the sphere becomes a lens that follows window.__lens
       // ({x,y} client px, t = last pointer ms, el = hovered link, ripple = click ms; written by Contact)
       const now = performance.now();
       const f = Math.min((now - lastT) / 16.667, 3); lastT = now;      // frame-rate independent spring
       const op = reduce ? 0 : Math.min(1, Math.max(0, window.__outro || 0));
+      const mp = reduce ? 0 : Math.min(1, Math.max(0, window.__mid || 0));
+      const eo = op * op * (3 - 2 * op);
+      const em = mp * mp * (3 - 2 * mp) * (1 - eo);
       let stretchX = 0, stretchY = 0, ripple = -1;
-      if(op > 0){
+      if(eo + em > 0){
         const L = window.__lens || {};
         let gx, gy, gr = 0.13 * fit;
-        if(L.el){                                                     // snap onto the hovered link, swell to cover it
+        if(op <= 0){                                                  // companion: dock on the current section's anchor
+          const T = window.__orbT || {};
+          gx = T.x ?? 0.5; gy = T.y ?? 0.5; gr = T.r ?? 0.1;
+        } else if(L.el){                                              // snap onto the hovered link, swell to cover it
           const b = L.el.getBoundingClientRect();
           gx = (b.left + b.width / 2) / innerWidth; gy = 1 - (b.top + b.height / 2) / innerHeight;
           gr = Math.min(0.24, Math.max(0.15, b.width / innerHeight * 0.62));
@@ -265,20 +301,32 @@
           gy = touch ? 0.15 + 0.04 * Math.sin(time * 0.62 + 1.0)    // touch: drift in the empty band under the links, not over them
                      : 0.52 + 0.14 * Math.sin(time * 0.62 + 1.0);
         }
-        if(L.ripple && L.ripple !== lastRipple){ lastRipple = L.ripple; lvr += 0.035; }   // click: jelly kick
+        if(op > 0 && L.ripple && L.ripple !== lastRipple){ lastRipple = L.ripple; lvr += 0.035; }   // click: jelly kick
         const damp = Math.pow(0.82, f);
         lvx = (lvx + (gx - lx) * 0.06 * f) * damp; lx += lvx * f;
         lvy = (lvy + (gy - ly) * 0.06 * f) * damp; ly += lvy * f;
         lvr = (lvr + (gr * breathe - lr) * 0.08 * f) * damp; lr += lvr * f;
-        const e = op * op * (3 - 2 * op);
-        sphX += (lx - sphX) * e; sphY += (ly - sphY) * e; sphR += (lr - sphR) * e;
+        const e = Math.min(1, eo + em);
+        sphX += (lx - sphX) * e; sphY += (ly - sphY) * e; sphR += (Math.max(lr, 0.006) - sphR) * e;   // jelly overshoot on a big shrink can dip below 0 → whole-screen flash
         fade += (1 - fade) * e;
-        outside = Math.min(outside, 1 - e * 0.94);
+        outside = Math.min(outside, 1 - em - eo * 0.94);
         const vx = lvx * W / H, vy = lvy, sp = Math.hypot(vx, vy);  // stretch along travel, capped
         if(sp > 1e-5){ const s = Math.min(0.4, sp * 9) * e; stretchX = vx / sp * s; stretchY = vy / sp * s; }
         const age = (now - (L.ripple || -1e9)) / 900;
-        if(age < 1) ripple = age;
+        if(op > 0 && age < 1) ripple = age;
+      } else { lx = sphX; ly = sphY; lr = sphR; lvx = lvy = lvr = 0; }   // spring waits on the hero sphere so the hand-off is seamless
+
+      // ---- menu: window.__menu 0→1 (tweened by Overlay): the sphere drifts in and swells past every corner; the menu lives inside it ----
+      const mn = reduce ? 0 : Math.min(1, Math.max(0, window.__menu || 0));
+      if(mn > 0){
+        sphX += (0.5 - sphX) * mn * 0.35; sphY += (0.5 - sphY) * mn * 0.35;
+        const cover = Math.hypot(Math.max(sphX, 1 - sphX) * W / H, Math.max(sphY, 1 - sphY)) * 1.04;
+        sphR += (cover - sphR) * mn;
+        stretchX *= 1 - mn; stretchY *= 1 - mn;
+        outside = Math.min(outside, 1 - mn);
+        fade += (1 - fade) * mn; fade *= 1 - mn * 0.22;   // a touch darker so the links read on the liquid
       }
+
 
       // pulsing amber light (0.8→1→0.8, ~12s)
       const pulse = 0.8 + (Math.sin(time * 0.52) * 0.5 + 0.5) * 0.2;
@@ -298,6 +346,8 @@
       gl.uniform1f(u.outside, outside);
       gl.uniform2f(u.stretch, stretchX, stretchY);
       gl.uniform1f(u.ripple, ripple);
+      gl.uniform1f(u.leak, reduce ? 0 : em);
+      gl.uniform1f(u.scroll, scrollY / innerHeight);
       gl.uniform3fv(u.c1, norm(cols[0]));
       gl.uniform3fv(u.c2, norm(cols[1]));
       gl.uniform3fv(u.c3, norm(cols[2]));
@@ -308,6 +358,6 @@
     }
     frame();
 
-    return { destroy(){ running=false; cancelAnimationFrame(raf); ro.disconnect(); removeEventListener('mousemove', onMove); } };
+    return { destroy(){ running=false; cancelAnimationFrame(raf); ro.disconnect(); removeEventListener('mousemove', onMove); removeEventListener('deviceorientation', onTilt); } };
   };
 })(window);
