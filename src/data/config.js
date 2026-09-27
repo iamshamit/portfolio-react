@@ -112,11 +112,11 @@ export const PORTFOLIO = {
       "There he implemented authentication, role-based permissions and team collaboration, so organizations can share and manage trackers securely.",
       "He integrated third-party services there, including Razorpay for subscription payments and Google OAuth for sign-in.",
     ],
-    lookingFor: "Full-stack or backend roles, ideally on AI-powered products. Remote. Available to start immediately.",
+    lookingFor: "Full-stack or backend roles, ideally on AI-powered products. Open to remote work or on-site roles anywhere, happy to relocate. Available to start immediately.",
     learning: "Going deeper into Go and edge/serverless backends (Cloudflare Workers, Hono), and building LLM features into real products, such as this very assistant on his portfolio.",
     workStyle: "He likes owning features end to end, from the database schema to the last pixel, and cares about the details users feel, like speed and polish.",
     more: [
-      "B.Tech in Computer Science & Engineering at GIET, Rayagada, Odisha, graduating 2026.",
+      "Graduated in 2026 with a B.Tech in Computer Science & Engineering from GIET, Rayagada, Odisha. Now open to work.",
       "Led a team at Smart India Hackathon 2024 that built a freelance marketplace (which became Nexara) and presented it to industry and government evaluators.",
       "Built a water-issue crowdsourcing Android app at the Water Tech Hackathon 2024.",
       "2,000+ GitHub contributions in the past year.",
