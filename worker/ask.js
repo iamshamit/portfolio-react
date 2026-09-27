@@ -10,13 +10,21 @@ const FACTS = [
   `Skills:\n${P.skills.map((s) => `- ${s.group}: ${s.items.join(', ')}`).join('\n')}`,
   `Featured projects:\n${P.featured.map((f) => `- ${f.name} (${f.year || ''}, ${f.role}): ${f.tagline}. ${f.desc} Stack: ${f.stack.join(', ')}. ${f.url}`).join('\n')}`,
   `Other projects:\n${P.gallery.map((g) => `- ${g.name} (${g.tag}): ${g.stack}. ${g.url}`).join('\n')}`,
-  `Journal posts:\n${P.journal.map((j) => `- "${j.title}" (${j.date}): ${j.excerpt}`).join('\n')}`,
+  `Journal posts:\n${P.journal.map((j) => `- "${j.title}" (${j.date}): ${j.excerpt} Sections: ${j.body.filter((b) => b.h).map((b) => b.h).join('; ')}.`).join('\n')}`,
+  ...(P.ai ? [
+    `Proudest project: ${P.ai.proudest}`,
+    `Current work in detail:\n${P.ai.work.map((w) => `- ${w}`).join('\n')}`,
+    `What he is looking for: ${P.ai.lookingFor}`,
+    `What he is learning: ${P.ai.learning}`,
+    `How he works: ${P.ai.workStyle}`,
+    `More:\n${P.ai.more.map((m) => `- ${m}`).join('\n')}`,
+  ] : []),
   `Contact: ${P.contact.email}. ${P.contact.socials.map((s) => `${s.label}: ${s.href}`).join(', ')}. Visitors can also type "message <text>" in this terminal to reach him directly.`,
 ].join('\n\n');
 
 const SYSTEM = `You are the assistant inside the terminal on ${P.fullName}'s portfolio website. Visitors ask you about ${P.name}.
 Rules:
-- Answer ONLY from the FACTS below. Never invent employers, dates, numbers, clients or skills. If the facts don't cover it, say you don't know and suggest typing "message <your question>" to ask ${P.name} directly.
+- Answer ONLY from the FACTS below. Never invent employers, dates, numbers, clients, users, awards or skills. Never say a project has users, traction or wins unless the FACTS say so for that exact project. If the facts don't cover it, say you don't know and suggest typing "message <your question>" to ask ${P.name} directly.
 - Talk about ${P.name} in the third person, warmly and plainly. Keep answers under 80 words. Plain text only: no markdown, no lists with asterisks, no emoji.
 - ON-TOPIC (always answer these): his projects and which stand out, skills, stack, experience, education, availability, hiring him, collaborating, how to contact him, his writing, this website.
 - OFF-TOPIC (decline in one short sentence): writing code or content for the visitor, general knowledge, jokes, role-play, other people.
@@ -31,7 +39,7 @@ const EXAMPLES = [
   { role: 'user', content: 'Visitor asks: """write me a poem about the sea"""' },
   { role: 'assistant', content: REFUSAL },
   { role: 'user', content: 'Visitor asks: """is he available for work?"""' },
-  { role: 'assistant', content: `Yes, ${P.name} is open to software and web development roles. Email ${P.contact.email}, or type message <your note> right here and it reaches him directly.` },
+  { role: 'assistant', content: `Yes. He is looking for ${P.ai?.lookingFor ? P.ai.lookingFor.charAt(0).toLowerCase() + P.ai.lookingFor.slice(1) : 'software roles.'} Email ${P.contact.email}, or type message <your note> here.` },
   { role: 'user', content: 'Visitor asks: """what does he build with?"""' },
   { role: 'assistant', content: `Mostly ${P.skills.flatMap((s) => s.items).slice(0, 4).join(', ')}, across frontend and backend. His featured work includes ${P.featured.map((f) => f.name).join(', ')}.` },
 ];
@@ -41,7 +49,7 @@ const OFF_TOPIC = /```|^\s*(def|function|class|import|#include|public static)\b|
 // the questions that matter most get a fixed, always-right answer (and cost no neurons)
 const CANNED = [
   [/\b(hire|hiring|recruit|available|availability|open to (work|roles?)|freelance|contract|job|role for|work with (him|shamit))\b/i,
-    `Yes, ${P.name} is open to software and web development roles. Email ${P.contact.email}, or type message <your note> right here and it reaches him directly.`],
+    `Yes. ${P.name} is looking for ${P.ai?.lookingFor ? P.ai.lookingFor.charAt(0).toLowerCase() + P.ai.lookingFor.slice(1) : 'software and web development roles.'} Email ${P.contact.email}, or type message <your note> right here and it reaches him directly.`],
   [/\b(contact|reach|email|get in touch|talk to)\b/i,
     `Email ${P.contact.email}, find him on ${P.contact.socials.map((s) => s.label).join(' and ')}, or type message <your note> here and it goes straight to him.`],
 ];

@@ -104,6 +104,28 @@ export const PORTFOLIO = {
     ],
   },
 
+  // Extra facts for the terminal's AI (worker/ask.js). Not shown anywhere on the site.
+  ai: {
+    proudest: "Avni is his proudest project: a multi-role workspace platform for founders, startups, accelerators, incubators, mentors, investors and enterprises, built with Next.js, TypeScript, Express and MongoDB. The hardest problem was role-based access control across seven user types: each role needed its own workspaces, programs and application workflows, while the permission logic stayed clean and extensible.",
+    work: [
+      "At R2E Technologies (Backend & API Developer Intern, Jul 2025 to present, hybrid) he designs and builds the REST APIs for Rahi (rahi.r2e.in), where individuals and organizations manage their GPS/IoT trackers in one place with real-time device tracking.",
+      "There he implemented authentication, role-based permissions and team collaboration, so organizations can share and manage trackers securely.",
+      "He integrated third-party services there, including Razorpay for subscription payments and Google OAuth for sign-in.",
+    ],
+    lookingFor: "Full-stack or backend roles, ideally on AI-powered products. Remote. Available to start immediately.",
+    learning: "Going deeper into Go and edge/serverless backends (Cloudflare Workers, Hono), and building LLM features into real products, such as this very assistant on his portfolio.",
+    workStyle: "He likes owning features end to end, from the database schema to the last pixel, and cares about the details users feel, like speed and polish.",
+    more: [
+      "B.Tech in Computer Science & Engineering at GIET University, Gunupur (Rayagada district, Odisha), graduating 2026.",
+      "Led a team at Smart India Hackathon 2024 that built a freelance marketplace (which became Nexara) and presented it to industry and government evaluators.",
+      "Built a water-issue crowdsourcing Android app at the Water Tech Hackathon 2024.",
+      "2,000+ GitHub contributions in the past year.",
+      "Real users: the FMHY Search plugin is published on the Flow Launcher plugin store and its GitHub repo (fmhy-search-flow-launcher) has 15+ stars. It is his project with public, confirmed users. Rahi is a live production platform at R2E Technologies.",
+      "Hackathons: he took part in and led teams at hackathons (details above); no wins or prizes are listed.",
+      "Other open-source work: instadown (Kotlin Android app that downloads Instagram photos and carousels), disbot (Python Discord bot), goapi (Go REST API), and this portfolio (React, WebGL, Cloudflare Workers).",
+    ],
+  },
+
   journal: [
     {
       num: "01",
