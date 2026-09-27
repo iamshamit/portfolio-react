@@ -674,10 +674,9 @@ kbd{font-family:'Fira Code',ui-monospace,monospace;font-size:11px;padding:1px 6p
 .a-spark.on{border-color:rgba(255,172,46,.45);background:rgba(255,172,46,.08);color:#fff;cursor:default}
 .a-spark.on i{transform:rotate(90deg) scale(1.25);text-shadow:0 0 14px rgba(255,172,46,.9)}
 
-.np{min-height:0;opacity:0;transition:opacity .6s var(--ease)}
-.np.in{opacity:1}
-.np a{display:inline-flex;align-items:center;gap:8px;transition:color .3s}
-.np a:hover{color:#fff}
+.f-live .live-status{display:inline-flex;align-items:center;gap:7px;vertical-align:bottom;transition:color .3s;animation:act-in .7s var(--ease)}
+.f-live .live-status:hover{color:#fff}
+@media(max-width:680px){ .f-live .live-status{display:flex;width:fit-content} .f-live:has(.live-status) .f-sep{display:none} }   /* phones: the live line gets its own row */
 .np-bars{display:inline-flex;align-items:flex-end;gap:2px;height:10px}
 .np-bars i{width:2px;height:40%;background:#a0e0ab;border-radius:1px}
 .np-bars.live i{animation:np-bar 1s ease-in-out infinite}

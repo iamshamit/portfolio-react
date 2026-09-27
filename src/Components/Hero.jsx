@@ -11,9 +11,8 @@ const since = (iso) => {
 const RECENT_PUSH = 48 * 3600 * 1000;
 const shortTitle = (t) => t.replace(/\s*[([](?:from|feat\.?|with|ft\.?)\s[^)\]]*[)\]]/gi, '').trim();   // Coca Cola (From "Luka Chuppi") → Coca Cola
 
-// bottom-right of the hero: your note as a bubble, then local time, then the most alive thing right now:
-// music playing → a recent push → the time-of-day status. Updates live (see api.js onActivity).
-function HeroActivity() {
+// live activity { note, music, push }, shared by the hero and the footer (see api.js onActivity)
+export function useActivity() {
   const [a, setA] = React.useState(null);
   const [, tick] = React.useState(0);
   React.useEffect(() => {
@@ -22,7 +21,29 @@ function HeroActivity() {
     const id = setInterval(() => tick((n) => n + 1), 60000);   // keeps "12m ago" honest
     return () => { off(); clearInterval(id); };
   }, []);
+  return a;
+}
+
+// the most alive thing right now: music playing → a push in the last 48h → null (caller shows the time-of-day status)
+export function LiveStatus({ a, className = '', verbose = true }) {
   const push = a?.push && Date.now() - new Date(a.push.at) < RECENT_PUSH ? a.push : null;
+  if (a?.music) return (
+    <a className={`live-status ${className}`} key={'m' + a.music.title} href={a.music.url} target="_blank" rel="noreferrer">
+      <span className="np-bars live" aria-hidden="true"><i /><i /><i /></span>
+      {verbose ? 'Listening to ' : ''}{shortTitle(a.music.title)} · {shortArtists(a.music.artist)}
+    </a>
+  );
+  if (push) return (
+    <a className={`live-status ${className}`} key={'p' + push.at} href={`https://github.com/${PORTFOLIO.github.handle.replace('@', '')}/${push.repo}`} target="_blank" rel="noreferrer">
+      <span className="push-dot" aria-hidden="true" />{verbose ? 'Pushed' : 'pushed'} to {push.repo} · {since(push.at)}
+    </a>
+  );
+  return null;
+}
+
+// bottom-right of the hero: your note as a bubble, then local time, then the live status
+function HeroActivity() {
+  const a = useActivity();
   return (
     <div className="hello">
       {a?.note && (
@@ -33,18 +54,7 @@ function HeroActivity() {
       )}
       <LocalTime>{(t) => (<>
         <div>{PORTFOLIO.location.split('·')[0].trim()} · {t.time}</div>
-        {a?.music ? (
-          <a className="status live" key={'m' + a.music.title} href={a.music.url} target="_blank" rel="noreferrer">
-            <span className="np-bars live" aria-hidden="true"><i /><i /><i /></span>
-            Listening to {shortTitle(a.music.title)} · {shortArtists(a.music.artist)}
-          </a>
-        ) : push ? (
-          <a className="status live" key={'p' + push.at} href={`https://github.com/${PORTFOLIO.github.handle.replace('@', '')}/${push.repo}`} target="_blank" rel="noreferrer">
-            <span className="push-dot" aria-hidden="true" />Pushed to {push.repo} · {since(push.at)}
-          </a>
-        ) : (
-          <div className="status">{t.status}</div>
-        )}
+        {LiveStatus({ a, className: "status live" }) ?? <div className="status">{t.status}</div>}
       </>)}</LocalTime>
     </div>
   );

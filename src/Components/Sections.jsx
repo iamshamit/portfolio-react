@@ -5,7 +5,8 @@ import { SMMark } from './Field';
 import { BlockRenderer, Toc, TocMobile } from './JournalBlocks';
 import { Link } from 'react-router-dom';
 import LocalTime from './LocalTime';
-import { API, api, nowPlaying, shortArtists, track } from '../api';
+import { API, api, track } from '../api';
+import { useActivity, LiveStatus } from './Hero';
 
 export function Skills() {
   return (
@@ -251,30 +252,8 @@ export function NotFound() {
   );
 }
 
-// Spotify line: asked for once, when the footer first comes into view; hidden until Spotify is connected
-function NowPlaying() {
-  const ref = React.useRef(null);
-  const [m, setM] = React.useState(null);
-  React.useEffect(() => {
-    if (!API) return;
-    const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) { io.disconnect(); nowPlaying().then(setM); } }, { rootMargin: '200px' });
-    io.observe(ref.current);
-    return () => io.disconnect();
-  }, []);
-  const show = m?.title;
-  return (
-    <div ref={ref} className={`np${show ? ' in' : ''}`}>
-      {show && (
-        <a href={m.url} target="_blank" rel="noreferrer">
-          <span className={`np-bars${m.playing ? ' live' : ''}`} aria-hidden="true"><i /><i /><i /></span>
-          {m.playing ? 'Listening to' : 'Last played'} {m.title} · {shortArtists(m.artist)}
-        </a>
-      )}
-    </div>
-  );
-}
-
 export function Footer() {
+  const a = useActivity();
   return (
     <footer className="footer">
       <div className="well">
@@ -282,9 +261,9 @@ export function Footer() {
           <div className="brand" role="img" aria-label={PORTFOLIO.name}>{PORTFOLIO.name}</div>
           <div className="meta">
             <div>{PORTFOLIO.role}</div>
-            <LocalTime>{(t) => <div>{t.time} in India · {t.status}</div>}</LocalTime>
+            {/* same live status as the hero; the time-of-day guess only when nothing is live */}
+            <LocalTime>{(t) => <div className="f-live">{t.time} in India<span className="f-sep"> · </span>{LiveStatus({ a, verbose: false }) ?? t.status}</div>}</LocalTime>
             <div>Designed in the dark · Built with care</div>
-            <NowPlaying />
           </div>
         </div>
         <div className="legal">
