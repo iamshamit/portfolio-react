@@ -42,10 +42,11 @@ const discord = (env, payload) => fetch(env.DISCORD_WEBHOOK, {
   method: 'POST', headers: { 'content-type': 'application/json' },
   body: JSON.stringify({ username: 'portfolio', allowed_mentions: { parse: [] }, ...payload }),   // no @everyone / role pings from strangers
 });
+const md = (s) => s.replace(/[\\[\]()*_~`|>#<-]/g, '\\$&');   // visitor text can't fake links or buttons in the Discord embed
 const where = (req) => `${req.cf?.city || '?'}, ${req.cf?.country || '?'}`;
 
 async function body(req) { try { return await req.json(); } catch { return {}; } }
-const clean = (s, max) => String(s || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, max);   // eslint-disable-line no-control-regex
+const clean = (s, max) => String(s || '').replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ').trim().slice(0, max);   // eslint-disable-line no-control-regex
 
 // ── message ──
 async function message(req, env, who) {
@@ -92,7 +93,7 @@ async function guestbookSign(req, env, who) {
   const link = async (action) => `${base}/guestbook/moderate?id=${id}&action=${action}&sig=${await sign(env, `${id}:${action}`)}`;
   await discord(env, { embeds: [{
     title: 'New guestbook entry', color: 0xa0e0ab,
-    description: `**${name}**\n${text}\n\n[✓ Approve](${await link('approve')})  ·  [✕ Delete](${await link('delete')})`,
+    description: `**${md(name)}**\n${md(text)}\n\n[✓ Approve](${await link('approve')})  ·  [✕ Delete](${await link('delete')})`,
     footer: { text: where(req) }, timestamp: new Date().toISOString(),
   }] });
   return json({ ok: true });
@@ -101,7 +102,7 @@ async function guestbookSign(req, env, who) {
 async function moderate(url, env) {
   const id = +url.searchParams.get('id'), action = url.searchParams.get('action'), sig = url.searchParams.get('sig') || '';
   const page = (msg) => new Response(`<!doctype html><meta name=viewport content="width=device-width"><body style="background:#000;color:#e6e3dc;font:16px ui-monospace,monospace;display:grid;place-items:center;height:100vh;margin:0">${msg}</body>`, { headers: { 'content-type': 'text/html; charset=utf-8' } });
-  if (!id || !['approve', 'delete'].includes(action) || sig !== (await sign(env, `${id}:${action}`))) return page('✕ invalid link');
+  if (!id || !['approve', 'delete'].includes(action) || !same(sig, await sign(env, `${id}:${action}`))) return page('✕ invalid link');
   if (action === 'approve') await env.DB.prepare('UPDATE guestbook SET approved = 1 WHERE id = ?1').bind(id).run();
   else await env.DB.prepare('DELETE FROM guestbook WHERE id = ?1').bind(id).run();
   await caches.default.delete(GB_CACHE);
