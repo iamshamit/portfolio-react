@@ -1,7 +1,7 @@
 // Ask Shamit: a small open model answering only from the portfolio's own content (src/data/config.js).
 import { PORTFOLIO as P } from '../src/data/config.js';
 
-export const MODEL = '@cf/meta/llama-3.1-8b-instruct-fp8-fast';   // ≈ 4k neurons / 1M in, 35k / 1M out: ~20–25 per answer
+export const MODEL = '@cf/meta/llama-3.1-8b-instruct-fp8-fast';   // ≈ 4k neurons / 1M in, 35k / 1M out: the ~5k-token prompt makes ~30 per answer, so the 300/day cap stays under the free 10k
 
 const FACTS = [
   `${P.fullName} (${P.name}), ${P.role}. Based in ${P.location}.`,
@@ -9,13 +9,16 @@ const FACTS = [
   `Experience & education:\n${P.timeline.map((t) => `- ${t.when}: ${t.what}, ${t.where}. ${t.note}`).join('\n')}`,
   `Skills:\n${P.skills.map((s) => `- ${s.group}: ${s.items.join(', ')}`).join('\n')}`,
   `Featured projects:\n${P.featured.map((f) => `- ${f.name} (${f.year || ''}, ${f.role}): ${f.tagline}. ${f.desc} Stack: ${f.stack.join(', ')}. ${f.url}`).join('\n')}`,
-  `Other projects:\n${P.gallery.map((g) => `- ${g.name} (${g.tag}): ${g.stack}. ${g.url}`).join('\n')}`,
+  `Other projects:\n${P.gallery.map((g) => `- ${g.name} (${g.tag}): ${g.desc ? g.desc + ' ' : ''}Stack: ${g.stack}. ${g.url}`).join('\n')}`,
+  // the case studies as plain prose (headings, paragraphs, lists): the deepest material on his work
+  `Case studies (full write-ups on the site, written by Shamit in the first person; "I" means Shamit):\n${P.featured.filter((f) => f.study).map((f) => `- ${f.name}: ${f.study.excerpt} ${f.study.body.map((b) => b.p || (b.h && b.h + ':') || (b.list && b.list.join(' ')) || '').filter(Boolean).join(' ')}`).join('\n')}`,
   `Journal posts:\n${P.journal.map((j) => `- "${j.title}" (${j.date}): ${j.excerpt} Sections: ${j.body.filter((b) => b.h).map((b) => b.h).join('; ')}.`).join('\n')}`,
   ...(P.ai ? [
     `Proudest project: ${P.ai.proudest}`,
     `Current work in detail:\n${P.ai.work.map((w) => `- ${w}`).join('\n')}`,
     `What he is looking for: ${P.ai.lookingFor}`,
     `What he is learning: ${P.ai.learning}`,
+    ...(P.ai.site ? [`About this website:\n${P.ai.site.map((s) => `- ${s}`).join('\n')}`] : []),
     `How he works: ${P.ai.workStyle}`,
     `More:\n${P.ai.more.map((m) => `- ${m}`).join('\n')}`,
   ] : []),

@@ -3,12 +3,12 @@ export const PORTFOLIO = {
   fullName: "Shamit Mishra",
   role: "Software Engineer · Full-Stack",
   location: "India · Remote",
-  eyebrow: "COMPUTER SCIENTIST · ENGINEER · BUILDER",
+  eyebrow: "FULL-STACK ENGINEER · INDIA · OPEN TO WORK",
 
   hero: {
     line1: "Shamit",
     line2: "Mishra.",
-    sub: "I design and build modern web applications, resilient backend systems, and AI-powered products engineering experiences that connect, compute, and inspire.",
+    sub: "I build backend systems and the interfaces on top of them. Lately: the API behind a live GPS tracking platform, and a review system that keeps startup selection fair.",
   },
 
   about: {
@@ -24,21 +24,64 @@ export const PORTFOLIO = {
       num: "01",
       name: "Avni",
       tagline: "Every role. One workspace.",
-      desc: "A multi-role digital workspace platform for Individuals, Startups, Accelerators, Incubators, Mentors, Investors, and Enterprises. Features workspace management, program creation, dynamic application workflows, and role-based access control.",
+      desc: "A workspace platform where incubators, accelerators and investors run programs and startups apply. I built its review system: applications are dealt to reviewers, scored blind, and corrected for strict and generous scorers.",
       role: "Full-stack · Team",
       year: "2026",
-      stack: ["Next.js 16", "React 19", "TypeScript", "Tailwind CSS", "Three.js", "Framer Motion", "Express", "MongoDB", "JWT Auth"],
+      stack: ["React 19", "Vite", "TypeScript", "Tailwind CSS", "Three.js", "Framer Motion", "Express", "MongoDB", "JWT Auth"],
       gradient: "ocean",
       mock: "browser",
       screenshot: "/screenshots/avni.png",
       url: "https://avni.app",
       repo: "#",
+      // Case study, written from the AVNI repo (backend/src/services/review*.ts, middleware/orgRoles.ts, config/orgTypes.ts).
+      study: {
+        excerpt: "A review system that deals applications to reviewers, corrects for strict and generous scorers, and locks itself when the work is done.",
+        read: "4 min",
+        body: [
+          { h: "Context" },
+          { p: "Avni is a workspace platform for the people around a startup. Incubators, accelerators, investors and corporates run programs on it; startups apply; mentors and individuals have workspaces of their own. I am one of a small team on it, working across an Express and MongoDB backend and a React frontend. My largest piece of work is the review system, the part that decides which applications move forward." },
+
+          { h: "The problem" },
+          { p: "A program gets more applications than one person can read, so the work is shared between reviewers. That creates a fairness problem. One reviewer gives everything a 3, another hands out 5s, and each application is only read by a few of them. With a plain average, a startup's result depends on who it happened to be dealt to." },
+
+          { h: "Dealing the work" },
+          { p: "Handing out applications is a set of pure functions with no database in them, so they can be checked on their own." },
+          { list: [
+            "A round is split between reviewer groups either by share or by an answer on the application form. Leftovers are divided with the largest-remainder method, so the counts always add up.",
+            "Inside a group, each application goes to the least-loaded reviewers first.",
+            "The shuffle is seeded, so the same round always produces the same split. An organiser can re-run it and get the same answer.",
+            "A reviewer who declares a conflict of interest is replaced by the next least-loaded reviewer who is not already on that application.",
+          ] },
+
+          { h: "Correcting for strict and generous reviewers" },
+          { p: "Every reviewer in a round also scores a small shared calibration set. It is picked evenly across the range of form scores, so everyone sees weak, middling and strong applications." },
+          { p: "From there I model each reviewer as: score = mean + spread x (true score - mean) + offset. Offset says how strict or generous the reviewer is. Spread says whether they use the whole scale or bunch everything in the middle. The fit alternates between estimating each application's true score and each reviewer's offset and spread, for 25 passes." },
+          { list: [
+            "A reviewer with fewer than five reviews is left uncorrected. There is not enough evidence to adjust them.",
+            "Estimates are pulled toward 'no correction' when a reviewer has few reviews, so a small sample cannot produce a large adjustment.",
+            "Offsets are pinned to average zero across the panel, so strict and generous are measured against the panel and not against a drifting consensus.",
+            "Before merging rankings from different groups, a union-find check confirms the groups are linked by applications that both reviewed. If they are not, the organiser is told the groups cannot be compared.",
+          ] },
+
+          { h: "Blind until submitted, locked when complete" },
+          { p: "Reviewers score weighted 1 to 5 criteria and cannot see anyone else's scores until they submit their own. That includes organisers who are also reviewing. Once nobody assigned to an application still has a review to submit, its reviews lock. Criteria freeze as soon as the first review exists, so the scale cannot change under reviewers." },
+
+          { h: "Two layers of permission" },
+          { p: "Access is checked twice on the server. The first check is membership: is this user the owner, an admin or a moderator of the workspace? The second is workspace type: only incubator, accelerator, investor and corporate workspaces can run programs at all. The frontend hides what a user cannot use, but the backend enforces both checks independently, so a hidden button is never the only protection." },
+
+          { h: "Rules that can be checked" },
+          { p: "Scoring, dealing and calibration are pure functions, and each has a small assert-based check script that runs with one command. The code where a mistake would change who gets selected is the code that is easiest to verify." },
+
+          { tech: ["React 19", "Vite", "TypeScript", "TanStack Query", "Express 5", "MongoDB", "Mongoose", "JWT"] },
+          { link: { text: "Visit Avni", href: "https://avni.app" } },
+        ],
+      },
     },
     {
       num: "02",
       name: "Nexara",
       tagline: "Freelancing reimagined.",
-      desc: "A full-stack freelancing platform connecting employers with skilled freelancers. Features include job posting, real-time messaging, secure escrow-based payments, reviews & ratings, and role-based workflows for employers and freelancers.",
+      desc: "A freelance marketplace that grew out of a hackathon. Jobs are split into milestones held in escrow, employers and freelancers talk over live chat, and accounts can turn on two-factor sign-in.",
       role: "Full-stack · MERN",
       year: "2026",
       stack: ["React", "Vite", "Tailwind CSS", "Node.js", "Express.js", "MongoDB", "JWT Auth"],
@@ -48,12 +91,43 @@ export const PORTFOLIO = {
       screenshot: "/screenshots/nexara.png",
       url: "https://nexara.iamshamit.com/",
       repo: "https://github.com/iamshamit/Freelancer",
+      // Case study, written from the Freelance repo (backend/models/Escrow.js, controllers/milestoneController.js, server.js).
+      study: {
+        excerpt: "A freelance marketplace that began at a hackathon: milestone escrow, live chat and two-factor sign-in.",
+        read: "3 min",
+        body: [
+          { h: "Where it started" },
+          { p: "I led a team at Smart India Hackathon 2024, where we built a freelance marketplace and presented it to industry and government evaluators. Afterwards I built the idea out on my own as Nexara: a React frontend, an Express API and MongoDB." },
+
+          { h: "Escrow by milestone" },
+          { p: "The core question in freelancing is trust: the freelancer wants to know the money exists, and the employer wants to pay only for finished work. Nexara answers it with an escrow record per job." },
+          { list: [
+            "When a job is assigned, its budget is held in an escrow record.",
+            "The employer splits the job into milestones. Their percentages must add up to exactly 100, or the request is rejected.",
+            "The freelancer marks a milestone complete. The employer approves it.",
+            "Approval releases that milestone's share, writes a transaction from the escrow to the freelancer, and starts the next milestone.",
+            "When the approved milestones reach 100 percent, the job closes and a PDF receipt can be downloaded.",
+          ] },
+          { p: "The escrow is a ledger inside the app: at every step it records what is held, what has been released, and to whom." },
+
+          { h: "Real-time chat" },
+          { p: "Chat runs on Socket.io. Each conversation and each user has a room, so a message reaches the open chat window and the recipient's notification badge at the same moment. The server tracks who is online, shows typing indicators and read receipts, and sends a heartbeat to each connection so a dropped client is noticed instead of staying 'online' forever." },
+
+          { h: "Accounts" },
+          { p: "There are three roles: freelancer, employer and admin. Passwords are hashed with bcrypt, sessions use JWT, and accounts can turn on two-factor authentication with an authenticator app and one-time backup codes." },
+
+          { tech: ["React", "Vite", "Tailwind CSS", "Node.js", "Express.js", "MongoDB", "Socket.io", "JWT Auth"] },
+          { link: { text: "Visit Nexara", href: "https://nexara.iamshamit.com/" } },
+          { spacer: "sm" },
+          { link: { text: "Source on GitHub", href: "https://github.com/iamshamit/Freelancer" } },
+        ],
+      },
     },
     {
       num: "03",
       name: "Rahi",
       tagline: "Fleet tracking, real-time.",
-      desc: "A comprehensive IoT tracking and fleet management dashboard. Features real-time device tracking, team collaboration, subscription management, and integrated Razorpay payments.",
+      desc: "A live platform where organizations manage GPS and IoT trackers in real time. I built the API behind it: authentication, team roles, subscription plans paid through Razorpay, and Google sign-in.",
       role: "Full-stack · Team",
       year: "2026",
       stack: ["React", "Vite", "Tailwind CSS", "Node.js", "Express", "MongoDB", "Google OAuth", "Razorpay"],
@@ -63,14 +137,44 @@ export const PORTFOLIO = {
       screenshot: "/screenshots/rahi.png",
       url: "https://rahi.r2e.in",
       repo: "#",
+      // Case study, written from the rahi-dashboard repo (backend/middleware/subscriptionLimits.js, routes/razorpay.js, routes/auth.js).
+      // Rahi is R2E's product: check with them before publishing anything more detailed than this.
+      study: {
+        excerpt: "Moving a live tracking dashboard off the browser and onto a real API.",
+        read: "3 min",
+        body: [
+          { h: "Context" },
+          { p: "Rahi is R2E Technologies' platform for managing GPS and IoT trackers. Individuals and organizations see their devices in one place, in real time. It is in production. I started on the dashboard's frontend, building the map layer and the admin monitoring views, and then moved to the backend: first as an intern, and now as a Software Engineer." },
+
+          { h: "The move" },
+          { p: "The first version of the dashboard talked to its database straight from the browser. That is quick to start with, but every rule about who can see what has to live in client code. I built the first version of the backend, an Express API on MongoDB, and moved the frontend onto it. Since then the browser never touches the database: every request goes through an authenticated endpoint, and the rules live on the server." },
+
+          { h: "Plans enforced in one place" },
+          { p: "Rahi is sold by subscription, and each plan has limits: devices, team members, API calls, storage. I did not want limit checks scattered across handlers, so the check is a single middleware that takes the name of the feature. A route that adds a device declares the device limit and nothing else." },
+          { list: [
+            "When a limit is reached the API answers with a specific error code plus the current usage and the limit, so the dashboard can show an upgrade prompt instead of a generic failure.",
+            "Accounts without a subscription fall back to the free plan's limits.",
+            "If the limit check itself fails, the request is allowed through and the error is logged. A billing bug should not lock a paying customer out of their own trackers.",
+          ] },
+
+          { h: "Payments and sign-in" },
+          { p: "Subscriptions are paid through Razorpay. The server never trusts the browser's word that a payment succeeded: it recomputes the HMAC signature for each payment and for each webhook before changing a subscription. Sign-in supports email and Google, and the Google token is verified on the server before an account is created or matched." },
+
+          { h: "Teams and roles" },
+          { p: "An organization can invite people and give them a role: admin, manager, member or viewer. Roles decide who can manage devices and who can only watch them, which is what lets a company share its trackers without sharing its account. Teams also get group and direct chat over Socket.io, and a signed-in device can stream its own location to the map." },
+
+          { tech: ["Node.js", "Express", "MongoDB", "Socket.io", "Razorpay", "Google OAuth", "React"] },
+          { link: { text: "Visit Rahi", href: "https://rahi.r2e.in" } },
+        ],
+      },
     },
   ],
 
   gallery: [
-    { num: "04", name: "Portfolio", tag: "Personal Portfolio", stack: "React · Vite · Framer Motion", gradient: "aurora", url: "https://shamit.is-a.dev", screenshot: "/screenshots/portfolio.png" },
-    { num: "05", name: "SpendWise", tag: "Finance Tracker", stack: "React · Node.js · MongoDB", gradient: "teal", url: "https://spendwise.iamshamit.com", screenshot: "/screenshots/spendwise.png" },
-    { num: "06", name: "FMHY Search", tag: "Flow Launcher Plugin", stack: "Python", gradient: "ocean", url: "https://www.flowlauncher.com/plugins/fmhy-search-3f7a2b1c-9e4d-4f8a-b3c2-1a5d8e7f0b9c/", screenshot: "/screenshots/fmhy-search.png" },
-    { num: "07", name: "Pasta", tag: "Text Sharing", stack: "React · Node.js · MongoDB", gradient: "ember", url: "https://pasta.iamshamit.com", screenshot: "/screenshots/pasta.png" },
+    { num: "04", name: "Portfolio", tag: "Personal Portfolio", desc: "His previous portfolio site, before this one.", stack: "React · Vite · Framer Motion", gradient: "aurora", url: "https://shamit.is-a.dev", screenshot: "/screenshots/portfolio.png" },
+    { num: "05", name: "SpendWise", tag: "Finance Tracker", desc: "A personal finance tracker: income, expenses and budgets, with sign-in, categorised transactions and analytics.", stack: "React · Node.js · MongoDB", gradient: "teal", url: "https://spendwise.iamshamit.com", screenshot: "/screenshots/spendwise.png" },
+    { num: "06", name: "FMHY Search", tag: "Flow Launcher Plugin", desc: "Searches the FMHY index straight from Flow Launcher on Windows. Published on the Flow Launcher plugin store; its GitHub repo has 15+ stars.", stack: "Python", gradient: "ocean", url: "https://www.flowlauncher.com/plugins/fmhy-search-3f7a2b1c-9e4d-4f8a-b3c2-1a5d8e7f0b9c/", screenshot: "/screenshots/fmhy-search.png" },
+    { num: "07", name: "Pasta", tag: "Text Sharing", desc: "A pastebin-style app for sharing text and code snippets by link.", stack: "React · Node.js · MongoDB", gradient: "ember", url: "https://pasta.iamshamit.com", screenshot: "/screenshots/pasta.png" },
   ],
 
   skills: [
@@ -81,8 +185,9 @@ export const PORTFOLIO = {
   ],
 
   timeline: [
-    { when: "2025 – Present", what: "Backend & API Developer Intern", where: "R2E Technologies Pvt. Ltd.", note: "Building backend services and REST APIs for IoT and fleet tracking products at a product-focused startup." },
-    { when: "2020 – 2026", what: "B.Tech Computer Science & Engineering", where: "GIET, Rayagada, Odisha", note: "Computer Science & Engineering with focus on full-stack development, distributed systems, and software engineering fundamentals." },
+    { when: "Sep 2026 – Present", what: "Software Engineer", where: "R2E Technologies Pvt. Ltd.", note: "Full-stack on AVNI, a workspace platform for India's startup ecosystem, and on RAHI, an IoT tracking and fleet management dashboard." },
+    { when: "Jul 2025 – Sep 2026", what: "Software Engineer Intern", where: "R2E Technologies Pvt. Ltd.", note: "REST APIs, the React dashboard, Google sign-in and Razorpay subscriptions for RAHI." },
+    { when: "2022 – 2026", what: "B.Tech Computer Science & Engineering", where: "GIET University, Gunupur, Odisha", note: "Computer Science & Engineering with focus on full-stack development, distributed systems, and software engineering fundamentals." },
   ],
 
   github: {
@@ -106,19 +211,40 @@ export const PORTFOLIO = {
 
   // Extra facts for the terminal's AI (worker/ask.js). Not shown anywhere on the site.
   ai: {
-    proudest: "Avni is his proudest project: a multi-role workspace platform for founders, startups, accelerators, incubators, mentors, investors and enterprises, built with Next.js, TypeScript, Express and MongoDB. The hardest problem was role-based access control across seven user types: each role needed its own workspaces, programs and application workflows, while the permission logic stayed clean and extensible.",
+    proudest: "Avni is his proudest project: a multi-role workspace platform for founders, startups, accelerators, incubators, mentors, investors and enterprises, built with React, TypeScript, Express and MongoDB. His biggest piece of it is the review system: applications are dealt to reviewers, scored blind on weighted criteria, and corrected for strict and generous reviewers before they are ranked. He also built its role-based access, which checks workspace membership and organization type separately on the server.",
+    // work + more: updated from his LinkedIn profile (Nov 2026)
     work: [
-      "At R2E Technologies (Backend & API Developer Intern, Jul 2025 to present, hybrid) he designs and builds the REST APIs for Rahi (rahi.r2e.in), where individuals and organizations manage their GPS/IoT trackers in one place with real-time device tracking.",
-      "There he implemented authentication, role-based permissions and team collaboration, so organizations can share and manage trackers securely.",
-      "He integrated third-party services there, including Razorpay for subscription payments and Google OAuth for sign-in.",
+      "Current job: Software Engineer (full-time) at R2E Technologies Private Limited since Sep 2026 (hybrid). Before that he was a Software Engineer Intern there from Jul 2025 to Sep 2026.",
+      "As a Software Engineer he works full-stack on AVNI (avni.app), a workspace platform for India's startup ecosystem: startups, incubators, accelerators, mentors, investors and enterprises each get their own workspace under one account. He builds it with two teammates.",
+      "On AVNI he works on the Express + TypeScript API on MongoDB (JWT login, email-verified sign-up), role-based access with separate checks for workspace membership and organization type, and the React + Vite frontend with TanStack Query and Tailwind CSS.",
+      "AVNI features he has built end to end: program applications and the review system, startup onboarding, agreement e-signing, workspace billing with Razorpay, visit analytics and a public repository of government schemes. He also handles database design and performance, such as the indexes that keep deep pagination fast on large public directories, and fixed the findings from a security audit of the platform.",
+      "He still works on RAHI (rahi.r2e.in), R2E's real-time IoT tracking and fleet management dashboard, on both the frontend and the APIs.",
+      "As an intern he worked on RAHI: REST APIs in Node.js and Express for devices, users and teams; the React and Tailwind dashboard where organizations manage users and devices with live map tracking; login and role-based access including Google sign-in; and subscriptions and payments with Razorpay.",
     ],
     lookingFor: "Full-stack or backend roles, ideally on AI-powered products. Open to remote work or on-site roles anywhere, happy to relocate. Available to start immediately.",
+    // this website, for questions like "how was this site built?"
+    site: [
+      "This website is iamshamit.com (also shamit.is-a.dev). Shamit designed and built it himself.",
+      "Frontend: React and Vite, GSAP (ScrollTrigger, SplitText) for the motion, Lenis for smooth scrolling, and a hand-written WebGL shader (no 3D library) for the liquid backdrop and the glass sphere. The terminal is xterm.js.",
+      "Backend: a Cloudflare Worker with a D1 (SQLite) database, a Durable Object that keeps a live WebSocket count of visitors, and Workers AI running Llama 3.1 8B for this assistant. It also talks to the GitHub and Spotify APIs, and sends terminal messages to Shamit through Discord.",
+      "The glass sphere is the thread through the whole site: it is born in the opening intro and swallows the screen, then follows you down the page, docks beside each section heading, takes on each project's colour, rides the experience timeline, opens the menu by swelling to fill the screen, becomes a lens that follows your cursor in the contact section, and drifts alone on the 404 page.",
+      "Live details: the hero shows Shamit's local time in India and what he is up to right now (the song he is playing on Spotify, his latest GitHub push, or a short status note he sets). The top bar shows how many people are on the site. Journal articles count views and have a spark button. The GitHub section shows his real contribution graph.",
+      "Sections, top to bottom: hero, about, selected work (Avni, Nexara, Rahi, each with a case study), more projects, toolkit, experience and education, open source (GitHub), journal, contact.",
+      "Case studies open at iamshamit.com/work/avni, /work/nexara and /work/rahi, or with the terminal command case <project>.",
+      "The terminal opens with the ` or ~ key, or the Ask me link in the top bar. Commands: ask (or any question ending in ?), whoami, about, neofetch, ls, case <project>, open <project>, skills, gh (repos, langs, activity), message <text> (goes straight to Shamit), sign and guestbook, who, np (now playing), contact, socials, theme <name> (ocean, silk, teal, aurora, ember), time, clear, exit. Tab completes, and grey suggestions appear as you type.",
+      "Privacy: visitors' IP addresses are hashed, never stored raw, and analytics are only simple counters.",
+      "Small touches: the tab title says come back when you switch away, the footer name letters move away from your cursor, and sudo hire shamit in the terminal drafts an email to him.",
+    ],
     learning: "Going deeper into Go and edge/serverless backends (Cloudflare Workers, Hono), and building LLM features into real products, such as this very assistant on his portfolio.",
     workStyle: "He likes owning features end to end, from the database schema to the last pixel, and cares about the details users feel, like speed and polish.",
     more: [
-      "Graduated in 2026 with a B.Tech in Computer Science & Engineering from GIET, Rayagada, Odisha. Now open to work.",
+      "Based in Hyderabad, Telangana. Hometown: Odisha.",
+      "Education: B.Tech in Computer Science & Engineering from GIET University, Gunupur, Odisha (2022 to 2026). Higher secondary (Science, CBSE) at Bhubaneswar Model Public School (2020 to 2022). Schooling (ICSE) at Little Flower School, Odisha, until 2020.",
+      "Certification: DSA with Java, from Apna College.",
+      "He enjoys every part of building his projects, from the first idea and the database design to the interface, the motion and the last bug fix. No single area is his favourite: he likes owning the whole thing.",
+      "Other projects: a Personal Finance Tracker (MERN, Jan to Mar 2024, the project that became SpendWise) with authentication, categorised transactions, analytics and budgets.",
       "Led a team at Smart India Hackathon 2024 that built a freelance marketplace (which became Nexara) and presented it to industry and government evaluators.",
-      "Built a water-issue crowdsourcing Android app at the Water Tech Hackathon 2024.",
+      "Built a water-issue crowdsourcing Android app at the Water Tech Hackathon (Feb 2024), with real-time issue tracking, location-based reporting, sign-in and push notifications.",
       "2,000+ GitHub contributions in the past year.",
       "Real users: the FMHY Search plugin is published on the Flow Launcher plugin store and its GitHub repo (fmhy-search-flow-launcher) has 15+ stars. It is his project with public, confirmed users. Rahi is a live production platform at R2E Technologies.",
       "Hackathons: he took part in and led teams at hackathons (details above); no wins or prizes are listed.",
