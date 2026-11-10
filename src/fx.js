@@ -23,6 +23,7 @@ function companion() {
     const b = a.getBoundingClientRect(), d = a.dataset;
     const y = d.orbFollow != null ? Math.min(b.bottom, Math.max(b.top, vh * 0.5)) : b.top + b.height * (d.orbY ?? 0.5);
     T.x = (b.left + b.width * (d.orbX ?? 0.5)) / innerWidth; T.y = 1 - y / vh; T.r = d.orb / vh;
+    window.__pal = d.pal;   // chapter colour: fluid.js eases the sphere + edge light toward this preset
   };
   window.__lenis.on('scroll', measure);
   ScrollTrigger.addEventListener('refresh', measure);
@@ -32,15 +33,22 @@ function companion() {
   ScrollTrigger.create({ trigger: '#about', start: 'top 135%', end: 'top bottom', onUpdate: set, onRefresh: set });
 }
 
-// Timeline rail fills as you read; on desktop the sphere rides its tip (data-orb-follow)
+// Timeline rail runs from the first row's node to the last and fills as you read; each node lights as the fill reaches it
 function rail() {
-  const railEl = document.querySelector('.tl-rail'), fill = railEl?.querySelector('i');
-  if (!fill) return;
-  // measured live every scroll (not trigger positions cached at load): the fill ends exactly where the sphere
-  // rides (viewport centre) even after late layout shifts such as the GitHub data arriving
+  const railEl = document.querySelector('.tl-rail'), fill = railEl?.querySelector('i'), tip = railEl?.querySelector('b');
+  const rows = gsap.utils.toArray('.tl-row');
+  if (!fill || !rows.length) return;
+  // measured live every scroll (not cached at load): late layout shifts, such as the GitHub data arriving, can't misplace it
   const update = () => {
-    const b = railEl.getBoundingClientRect();
-    fill.style.transform = `scaleY(${gsap.utils.clamp(0, 1, (innerHeight / 2 - b.top) / (b.height || 1))})`;
+    // node centre = the date's centre (the date sits on the title's baseline, so its height varies with the title size)
+    const nodeY = (r) => { const w = r.querySelector('.when'), y = w.offsetTop + w.offsetHeight / 2; r.style.setProperty('--node-y', y + 'px'); return r.offsetTop + y; };
+    const top = nodeY(rows[0]), h = Math.max(1, nodeY(rows[rows.length - 1]) - top);
+    railEl.style.top = top + 'px'; railEl.style.height = h + 'px';
+    const p = gsap.utils.clamp(0, 1, (innerHeight / 2 - railEl.getBoundingClientRect().top) / h);
+    fill.style.transform = `scaleY(${p})`;
+    if (tip) tip.style.transform = `translateY(${p * h}px)`;   // the bead is optional markup: a throw here runs inside Lenis' frame loop and freezes scrolling
+    railEl.classList.toggle('live', p > 0 && p < 1);
+    rows.forEach((r) => r.classList.toggle('on', nodeY(r) - top <= p * h + 0.5));
   };
   if (window.__lenis) window.__lenis.on('scroll', update); else addEventListener('scroll', update, { passive: true });
   addEventListener('resize', update);
@@ -73,9 +81,11 @@ function lede() {
 function heatmap() {
   const cells = gsap.utils.toArray('.contrib i');
   if (!cells.length) return;
-  gsap.from(cells, { scale: 0, opacity: 0, duration: 0.7, ease: 'back.out(2.2)',
-    stagger: (i) => (Math.floor(i / 7) + (i % 7)) * 0.022,
-    scrollTrigger: { trigger: '.contrib', start: 'top 85%', once: true } });
+  const tw = gsap.from(cells, { scale: 0, opacity: 0, duration: 0.7, ease: 'back.out(2.2)', paused: true,
+    stagger: (i) => (Math.floor(i / 7) + (i % 7)) * 0.022 });
+  // IntersectionObserver, not a once-ScrollTrigger: that one could be skipped by a jump scroll, leaving the grid invisible
+  new IntersectionObserver(([e], io) => { if (e.isIntersecting) { io.disconnect(); tw.play(); } }, { threshold: 0.15 })
+    .observe(document.querySelector('.contrib'));
 }
 
 // 5 · Project previews tilt toward the cursor with a glare that follows it

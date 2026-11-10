@@ -220,6 +220,7 @@ export function Nav({ onOpen }) {
         <a className="lnk" href="#work" data-scroll="work">Work</a>
         <a className="lnk" href="#journal" data-scroll="journal">Journal</a>
         <a className="lnk" href="#contact" data-scroll="contact">Contact</a>
+        <button className="lnk ask" onClick={() => { track('nav:ask'); dispatchEvent(new Event('open-terminal')); }} aria-label="Ask Shamit: open the terminal assistant"><i aria-hidden="true">✦</i>Ask me</button>
         <button className="menu-btn" onClick={() => { track('menu:open'); onOpen(); }} aria-label="Open menu">
           <span /><span />
         </button>

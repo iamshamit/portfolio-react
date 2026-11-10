@@ -80,10 +80,10 @@ function Mock({ p }) {
   );
 }
 
-function Feat({ p, i }) {
+function Feat({ p, i, onStudy }) {
   return (
     <article className="feat" data-screen-label={`Project ${p.num}`}>
-      <a className="feat-vis" data-cursor="view" data-parallax="" data-orb="56" data-orb-x={i % 2 ? 1 : 0} data-orb-y="0" href={p.url} target="_blank" rel="noreferrer" style={{ display:'block', textDecoration:'none' }}>
+      <a className="feat-vis" data-cursor="view" data-parallax="" data-orb="56" data-orb-x={i % 2 ? 1.08 : -0.08} data-orb-y="-0.08" data-pal={p.gradient} href={p.url} target="_blank" rel="noreferrer" style={{ display:'block', textDecoration:'none' }}>
         {!FEATURED_UI[p.name] && <div className="g" style={{ background: GRAD[p.gradient] }} />}
         <Mock p={p} />
 
@@ -99,6 +99,7 @@ function Feat({ p, i }) {
           {p.stack.map((s, i) => <span key={i} className="chip">{s}</span>)}
         </div>
         <div className="feat-actions reveal">
+          {p.study && <button className="btn-ghost solid" onClick={() => onStudy(p)}>Case study <span>→</span></button>}
           <a className="btn-ghost" href={p.url} target="_blank" rel="noreferrer">Live <span>→</span></a>
           {p.repo && p.repo !== "#" && <a className="btn-ghost" href={p.repo} target="_blank" rel="noreferrer">Code</a>}
         </div>
@@ -107,7 +108,7 @@ function Feat({ p, i }) {
   );
 }
 
-export function Featured() {
+export function Featured({ onStudy }) {
   return (
     <section className="featured" id="work">
       <div className="well" style={{ paddingTop: '150px' }}>
@@ -117,7 +118,7 @@ export function Featured() {
           <div className="note">{PORTFOLIO.featured.length} featured · {new Date().getFullYear()}</div>
         </div>
       </div>
-      {PORTFOLIO.featured.map((p, i) => <Feat key={p.num} p={p} i={i} />)}
+      {PORTFOLIO.featured.map((p, i) => <Feat key={p.num} p={p} i={i} onStudy={onStudy} />)}
     </section>
   );
 }
@@ -127,10 +128,10 @@ export function Gallery() {
     <section className="gallery-wrap" id="gallery" data-gallery="">
       <div className="gallery-sticky">
         <div className="gallery-track" data-gallery-track="">
-          <div className="gallery-intro" data-orb="46" data-orb-x=".78" data-orb-y=".16">
+          <div className="gallery-intro" data-orb="46" data-orb-x=".78" data-orb-y=".16" data-pal="ember">
             <div className="idx">More</div>
             <h2 data-split="">And a few more.</h2>
-            <p>Side projects, experiments, and tools. Drag or scroll →</p>
+            <p>Side projects, experiments, and tools. Keep scrolling →</p>
           </div>
           {PORTFOLIO.gallery.map((p) => (
             <a key={p.num} className="gcard" href={p.url} data-cursor="view">

@@ -193,7 +193,7 @@ async function neofetch(arg, ctx) {
 // ── commands ──
 const HELP = [
   ['ask <question>', 'ask anything about me (AI)'], ['whoami', 'who is this'], ['about', 'the longer version'], ['neofetch', 'system info, the fun way'],
-  ['ls', 'list projects'], ['open <project>', 'open a project'], ['skills', 'the toolkit'],
+  ['ls', 'list projects'], ['case <project>', 'read a case study'], ['open <project>', 'open a project'], ['skills', 'the toolkit'],
   ['gh [repos|langs|activity]', 'live GitHub'], ['message <text>', 'send me a note, straight to my phone'], ['sign', 'sign the guestbook'], ['guestbook', 'read what people left'],
   ['who', 'who else is here'], ['np', "what I'm listening to"], ['contact', 'copy my email'], ['socials', 'where else to find me'],
   ['theme <name>', THEMES.join(' | ')], ['time', 'my local time'], ['clear', 'clear the screen  (ctrl+l)'], ['exit', 'close the terminal  (esc)'],
@@ -203,7 +203,22 @@ const COMMANDS = {
   whoami: () => [`${green(PORTFOLIO.fullName)} · ${PORTFOLIO.role}`, dim(PORTFOLIO.location)],
   about: () => PORTFOLIO.about.body,
   neofetch,
-  ls: () => projects().map((p) => `  ${amber(pad(p.name, 16))}${dim(p.tagline || p.tag || '')}`),
+  ls: () => [
+    ...projects().map((p) => `  ${amber(pad(p.name, 16))}${pad(p.study ? '✦' : '', 3)}${dim(p.tagline || p.tag || '')}`),
+    '', dim(`  ✦ has a case study: ${amber('case <project>')}`),
+  ],
+  case: (arg, ctx) => {
+    const studies = PORTFOLIO.featured.filter((p) => p.study);
+    const p = studies.find((q) => slug(q.name) === slug(arg || ''));
+    if (!p) return [
+      arg ? `no case study for "${arg}". these have one:` : 'case studies:',
+      ...studies.map((q) => `  ${amber(pad(q.name, 10))}${dim(((w) => (q.study.excerpt.length > w ? q.study.excerpt.slice(0, w - 1).trimEnd() + '…' : q.study.excerpt))(Math.max(20, ctx.cols - 14)))}`),
+      '', dim(`  read one with ${amber('case <project>')}`),
+    ];
+    // the router listens for popstate: this opens the case study sheet on the page, then the terminal steps aside
+    setTimeout(() => { history.pushState({}, '', '/work/' + p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')); dispatchEvent(new PopStateEvent('popstate')); ctx.exit(); }, 450);
+    return [`opening the ${green(p.name)} case study…`];
+  },
   open: (arg) => {
     const p = projects().find((q) => slug(q.name) === slug(arg || ''));
     if (!p) return [arg ? `no project called "${arg}". try ${amber('ls')}` : `usage: ${amber('open <project>')}`];
@@ -298,7 +313,16 @@ const COMMANDS = {
     return [rust('nice try.')];
   },
 };
-const COMPLETE = { gh: Object.keys(GH), theme: THEMES, open: () => projects().map((p) => slug(p.name)) };
+const COMPLETE = { gh: Object.keys(GH), theme: THEMES, open: () => projects().map((p) => slug(p.name)), case: () => PORTFOLIO.featured.filter((p) => p.study).map((p) => slug(p.name)) };
+// fish-style ghost: the rest of the newest matching history entry, else of the tab completion
+const suggest = (line, hist) => {
+  if (!line) return '';
+  for (let i = hist.length - 1; i >= 0; i--) if (hist[i].startsWith(line) && hist[i] !== line) return hist[i].slice(line.length);
+  const [c, arg] = line.split(/ (.*)/);
+  const pool = arg === undefined ? Object.keys(COMMANDS) : [].concat(typeof COMPLETE[c] === 'function' ? COMPLETE[c]() : COMPLETE[c] || []);
+  const m = pool.find((x) => x.startsWith(arg ?? c) && x !== (arg ?? c));
+  return m ? m.slice((arg ?? c).length) : '';
+};
 
 const BOOT = [
   ['shamit.sh — cold boot', 'ok'], ['mounting ~/projects', `${projects().length} found`], ['loading palette', 'ocean'],
@@ -325,9 +349,19 @@ export async function createShell(host, { onExit }) {
   const PS = `${green('shamit')}${dim('@')}${amber('portfolio')} ${dim('~ $')} `;
   const hist = JSON.parse(localStorage.getItem('shamit.term.hist') || '[]');
   let line = '', h = hist.length, busy = false, cancelled = false, asking = null;
-  const prompt = () => { t.write('\r\n' + PS); line = ''; h = hist.length; };
-  const redraw = (s) => { t.write('\x1b[2K\r' + PS + s); line = s; };
+  let fresh = false;   // after clear: the prompt goes on the (now empty) top row, not below it
+  const prompt = () => { t.write((fresh ? '' : '\r\n') + PS); fresh = false; line = ''; h = hist.length; };
+  const PS_W = 21;   // visible width of PS
+  let ghost = '';
+  // redraw the input line; the ghost suggestion trails it in dim and the cursor steps back over it
+  const redraw = (s) => {
+    line = s;
+    ghost = busy ? '' : suggest(s, hist);
+    if (PS_W + s.length + ghost.length >= t.cols) ghost = '';   // one row only: a wrapped ghost can't be erased cleanly
+    t.write('\x1b[2K\r' + PS + s + (ghost ? dim(ghost) + `\x1b[${ghost.length}D` : ''));
+  };
   const ctx = {
+    exit: () => onExit(),
     get cols() { return t.cols; },
     spin(label) {   // braille spinner on its own line; stop() erases it and returns to the prompt line
       const F = '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏';
@@ -357,7 +391,7 @@ export async function createShell(host, { onExit }) {
     if (!cmd) return;
     hist.push(raw.trim());
     localStorage.setItem('shamit.term.hist', JSON.stringify(hist.slice(-100)));
-    if (cmd === 'clear') { t.clear(); return; }
+    if (cmd === 'clear') { t.clear(); t.write('\x1b[2K\r'); fresh = true; return; }   // clear() keeps the cursor row, which still says "clear\"
     if (cmd === 'exit') { onExit(); return; }
     let fn = COMMANDS[cmd.toLowerCase()], arg = rest.join(' ');
     if (!fn && raw.trim().endsWith('?')) { fn = COMMANDS.ask; arg = raw.trim(); }   // a plain question goes to the AI
@@ -385,12 +419,9 @@ export async function createShell(host, { onExit }) {
     }
     if (busy) return;
     if (d === '\x0c') { t.clear(); redraw(line); return; }   // ctrl+l
-    if (d === '\r') {
-      busy = true; cancelled = false;
-      await run(line);
-      busy = false;
-      prompt();
-    } else if (d === '\x7f') { if (line) { line = line.slice(0, -1); t.write('\b \b'); } }
+    if (d === '\r') submit();
+    else if ((d === '\x1b[C' || d === '\x1b[F' || d === '\x1bOF') && ghost) redraw(line + ghost);   // → / end takes the ghost
+    else if (d === '\x7f') { if (line) redraw(line.slice(0, -1)); }
     else if (d === '\x1b[A') { if (h > 0) redraw(hist[--h]); }
     else if (d === '\x1b[B') { if (h < hist.length) { h++; redraw(hist[h] || ''); } }
     else if (d === '\t') {
@@ -399,8 +430,15 @@ export async function createShell(host, { onExit }) {
       const m = pool.find((x) => x.startsWith(arg ?? c));
       if (m) redraw(arg === undefined ? m + ' ' : `${c} ${m}`);
     } else if (d === '`' || d === '~') { /* the toggle key, handled by the window */ }
-    else { const s = d.replace(/[\x00-\x1f\x7f]/g, ''); line += s; t.write(s); }   // eslint-disable-line no-control-regex -- strip pasted control chars
+    else if (!d.startsWith('\x1b')) { const s = d.replace(/[\x00-\x1f\x7f]/g, ''); if (s) redraw(line + s); }   // eslint-disable-line no-control-regex -- strip pasted control chars
   });
+  const submit = async () => {
+    if (ghost) t.write('\x1b[K');   // drop the ghost before the output starts
+    busy = true; cancelled = false; ghost = '';
+    await run(line);
+    busy = false;
+    prompt();
+  };
 
   const banner = () => {
     t.writeln(`${amber('✦')} ${green(bold('shamit.sh'))} ${dim('— you found the back door.')}`);
@@ -412,6 +450,11 @@ export async function createShell(host, { onExit }) {
     focus: () => t.focus(),
     blur: () => t.blur(),
     dims: () => [t.cols, t.rows],
+    // run a command as if typed (the suggestion chips); ignored while one runs or a prompt is waiting
+    exec(cmd) {
+      if (busy || asking) return;
+      redraw(cmd); submit(); t.focus();
+    },
     onResize: (f) => listeners.add(f),
     // first ever open: ~0.8s of boot log, then the banner; afterwards the banner alone
     boot(first) {

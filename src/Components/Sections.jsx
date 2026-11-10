@@ -347,9 +347,9 @@ function useArticleStats(slug) {
 }
 const compact = (n) => (n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, '') + 'k' : String(n));
 
-export function Article({ index, onClose, onNav }) {
-  const open = index != null;
-  const post = open ? PORTFOLIO.journal[index] : null;
+// post = a journal entry or a project case study ({ ...same shape, study: true }); nextTitle = the "Next" card
+export function Article({ post, nextTitle, onClose, onNav }) {
+  const open = !!post;
   const scroller = React.useRef(null);
 
   React.useEffect(() => {
@@ -364,14 +364,12 @@ export function Article({ index, onClose, onNav }) {
       addEventListener('keydown', onKey);
       return () => { removeEventListener('keydown', onKey); document.body.style.overflow = ''; };
     }
-  }, [open, index]);
+  }, [open, post?.title]);
 
-  const total = PORTFOLIO.journal ? PORTFOLIO.journal.length : 0;
-  const next = open ? PORTFOLIO.journal[(index + 1) % total] : null;
   const hasToc = post?.body?.some(b => b.toc);
-  const slug = post ? slugOf(post.title) : null;
+  const slug = post && !post.study ? slugOf(post.title) : null;   // views and sparks are for journal posts only
   const { stats, sparked, spark } = useArticleStats(slug);
-  React.useEffect(() => { if (slug) track('article:' + slug); }, [slug]);
+  React.useEffect(() => { if (post) track((post.study ? 'study:' : 'article:') + slugOf(post.title)); }, [post?.title]);
 
   return (
     <div className={`article${open ? ' open' : ''}`} aria-hidden={open ? 'false' : 'true'}>
@@ -408,10 +406,10 @@ export function Article({ index, onClose, onNav }) {
                   </button>
                 )}
               </div>
-              {next && (
+              {nextTitle && (
                 <button className="a-next" onClick={() => onNav(1)} data-cursor="view">
                   <span className="a-next-l">Next</span>
-                  <span className="a-next-t">{next.title}</span>
+                  <span className="a-next-t">{nextTitle}</span>
                   <span className="a-next-arrow">→</span>
                 </button>
               )}

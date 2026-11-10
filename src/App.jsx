@@ -306,14 +306,20 @@ export default function App() {
       removeEventListener('scroll', onScroll);
       skipEvents.forEach((t) => removeEventListener(t, skipIntro));
       ScrollTrigger.getAll().forEach((st) => st.kill());
-      window.__mid = 0;
+      window.__mid = 0; window.__pal = null;
       if (lenis) lenis.destroy();
     };
   }, []);
 
   // /blog/<slug> is home with that article open, but only for a real post; anything else is the void
   const blogSlug = location.pathname.match(/^\/blog\/([^/]+)\/?$/)?.[1];
-  const isHome = location.pathname === '/' || (!!blogSlug && PORTFOLIO.journal.some((p) => slugify(p.title) === decodeURIComponent(blogSlug)));
+  // /work/<slug> is home with that project's case study open (derived from the URL, so Back closes it)
+  const studies = PORTFOLIO.featured.filter((p) => p.study);
+  const workSlug = location.pathname.match(/^\/work\/([^/]+)\/?$/)?.[1];
+  const study = workSlug ? studies.findIndex((p) => slugify(p.name) === workSlug) : -1;
+  const openStudy = (p) => navigate(`/work/${slugify(p.name)}`);
+  const studyPost = (p) => ({ title: p.name, excerpt: p.study.excerpt, tag: 'Case study', date: p.year, read: p.study.read, body: p.study.body, study: true });
+  const isHome = location.pathname === '/' || study >= 0 || (!!blogSlug && PORTFOLIO.journal.some((p) => slugify(p.title) === decodeURIComponent(blogSlug)));
   const hero = PORTFOLIO.hero;
 
   return (
@@ -340,7 +346,7 @@ export default function App() {
               <Hero hero={hero} />
               <Marquee />
               <About />
-              <Featured />
+              <Featured onStudy={openStudy} />
               <Gallery />
               <Skills />
               <Timeline />
@@ -353,7 +359,14 @@ export default function App() {
         ) : <NotFound />} />
       </Routes>
 
-      <Article index={article} onClose={closeArticle} onNav={navArticle} />
+      {study >= 0 ? (
+        <Article post={studyPost(studies[study])} nextTitle={studies.length > 1 && studies[(study + 1) % studies.length].name}
+          onClose={() => navigate('/')} onNav={(d) => openStudy(studies[(study + d + studies.length) % studies.length])} />
+      ) : (
+        <Article post={article != null ? PORTFOLIO.journal[article] : null}
+          nextTitle={article != null && journalLen > 1 && PORTFOLIO.journal[(article + 1) % journalLen].title}
+          onClose={closeArticle} onNav={navArticle} />
+      )}
     </>
   );
 }

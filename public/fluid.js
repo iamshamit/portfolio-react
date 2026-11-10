@@ -118,7 +118,8 @@
         scol += mix(u_c1, vec3(1.0, 0.9, 0.7), 0.5) * band * 0.7;
       }
 
-      float edge = smoothstep(1.0, 0.975, n);
+      // edge softness: 2.5% of the radius, but never under ~1.5 buffer px, so a small docked sphere stays round, not jagged
+      float edge = smoothstep(1.0, 1.0 - max(0.025, 1.5 / max(u_sphereR * u_res.y, 1.0)), n);
       col = mix(col, scol, edge);
     }
     // intro: faint halo around the lone sphere in the void
@@ -139,7 +140,7 @@
         dl = mat2(0.8, -0.6, 0.6, 0.8) * dl;
         dl.y *= 1.4;
         float g = exp(-dot(dl, dl) * 4.0);
-        col += mix(u_c1, u_c2, smoothstep(0.15, 0.85, g)) * g * 0.18 * u_leak * u_pulse;
+        col += mix(u_c1, u_c2, smoothstep(0.15, 0.85, g)) * g * 0.3 * u_leak * u_pulse;
       }
     }
 
@@ -185,12 +186,16 @@
     const mobile = matchMedia('(max-width:760px)').matches || touch;
     const SCALE = mobile ? 0.6 : 0.72;   // render below css size; lighter on phones
     let W = 1, H = 1;
+    // hiRes: while the sphere is a small companion in the dark middle the full-screen field isn't drawn, so the frame is cheap
+    // and can render at full device resolution; at 0.72x a 26px sphere was upscaled from ~18px and looked pixelated
+    let hiRes = false;
     function syncSize(){
       const cw = canvas.clientWidth, ch = canvas.clientHeight;
       if(cw < 1 || ch < 1) return;
-      const dpr = Math.min(devicePixelRatio || 1, mobile ? 1.5 : 1.4);   // phones ≈0.9 buffer px per css px: sharp contact lens edge
-      const nw = Math.max(2, Math.floor(cw * dpr * SCALE));
-      const nh = Math.max(2, Math.floor(ch * dpr * SCALE));
+      const dpr = Math.min(devicePixelRatio || 1, hiRes ? 2 : mobile ? 1.5 : 1.4);   // phones ≈0.9 buffer px per css px: sharp contact lens edge
+      const sc = hiRes ? 1 : SCALE;
+      const nw = Math.max(2, Math.floor(cw * dpr * sc));
+      const nh = Math.max(2, Math.floor(ch * dpr * sc));
       if(nw !== W || nh !== H){ W = nw; H = nh; canvas.width = W; canvas.height = H; gl.viewport(0,0,W,H); }
     }
     syncSize();
@@ -224,6 +229,8 @@
     const lin = (a,b,x)=>Math.max(0, Math.min(1, (x-a)/(b-a)));
     const smooth = (a,b,x)=>{ const t = lin(a,b,x); return t*t*(3-2*t); };
     let raf, running = true;
+    // live palette: eases toward the chapter's preset (fx.js sets window.__pal from the docked anchor's data-pal)
+    const cols = (PRESETS[document.documentElement.dataset.grad] || PRESETS.ocean).map((c) => c.slice());
     // read once: getComputedStyle every frame forces a style recalc mid-scroll (nothing changes --motion at runtime)
     const motion = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--motion')) || 1;
     function frame(){
@@ -231,7 +238,8 @@
       if(window.__heroInView === false && !window.__outroInView && !(window.__mid > 0) && !(window.__menu > 0)){ raf = requestAnimationFrame(frame); return; }  // pause when neither hero nor contact is on screen
       syncSize();   // re-sync buffer to live client size (survives pin reflows)
       mx += (tx - mx) * 0.05; my += (ty - my) * 0.05;
-      const cols = PRESETS[document.documentElement.dataset.grad] || PRESETS.ocean;
+      const tgt = PRESETS[window.__pal] || PRESETS[document.documentElement.dataset.grad] || PRESETS.ocean;
+      for(let i=0;i<3;i++) for(let j=0;j<3;j++) cols[i][j] += (tgt[i][j] - cols[i][j]) * 0.035;
       const time = reduce ? 12.0 : (performance.now() - start) / 1000 * motion;
       const sc = reduce ? 0 : (window.__heroScroll || 0);   // 0..1 hero scroll progress
 
@@ -281,6 +289,8 @@
       const f = Math.min((now - lastT) / 16.667, 3); lastT = now;      // frame-rate independent spring
       const op = reduce ? 0 : Math.min(1, Math.max(0, window.__outro || 0));
       const mp = reduce ? 0 : Math.min(1, Math.max(0, window.__mid || 0));
+      const wantHi = !mobile && mp > 0.5 && op === 0 && !(window.__menu > 0) && ip >= 1;
+      if(wantHi !== hiRes){ hiRes = wantHi; syncSize(); }
       const eo = op * op * (3 - 2 * op);
       const em = mp * mp * (3 - 2 * mp) * (1 - eo);
       let stretchX = 0, stretchY = 0, ripple = -1;
