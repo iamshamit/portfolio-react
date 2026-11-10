@@ -4,7 +4,10 @@ export const API = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
 export async function api(path, { method = 'GET', body } = {}) {
   if (!API) throw new Error('offline');
-  const r = await fetch(API + path, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : { method });
+  let owner = null;
+  try { owner = localStorage.getItem('shamit.owner'); } catch { /* private mode */ }   // set by the terminal's `owner <key>`
+  const headers = { ...(body && { 'content-type': 'application/json' }), ...(owner && { 'x-owner': owner }) };
+  const r = await fetch(API + path, body ? { method: 'POST', headers, body: JSON.stringify(body) } : { method, headers });
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw Object.assign(new Error(data.message || data.error || `error ${r.status}`), { status: r.status });
   return data;

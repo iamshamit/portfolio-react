@@ -10,6 +10,7 @@
 //   GET  /activity                                 → hero line: status note (24h) + music + latest push
 //   GET|POST /note?k=NOTE_KEY                      → your private page to set the note; pushes it live to every visitor
 //   POST /events  (sendBeacon, one per visit)      → analytics counters
+//   POST /owner                { action, ... }     → owner tools for the terminal (x-owner header = NOTE_KEY)
 // Secrets: DISCORD_WEBHOOK, GITHUB_TOKEN, ADMIN_SECRET, NOTE_KEY, [SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REFRESH_TOKEN]
 import { answer } from './ask.js';
 export { Presence } from './presence.js';
@@ -24,7 +25,7 @@ const visitor = async (req) => hex(await crypto.subtle.digest('SHA-256', new Tex
 function corsFor(req, env) {
   const origin = req.headers.get('origin') || '';
   if (!env.ALLOWED_ORIGINS.split(',').map((s) => s.trim()).includes(origin)) return null;
-  return { 'access-control-allow-origin': origin, 'access-control-allow-methods': 'GET, POST', 'access-control-allow-headers': 'content-type', vary: 'origin' };
+  return { 'access-control-allow-origin': origin, 'access-control-allow-methods': 'GET, POST', 'access-control-allow-headers': 'content-type, x-owner', vary: 'origin' };
 }
 
 // daily cap: one atomic upsert, true while under `max`
@@ -66,6 +67,11 @@ async function ask(req, env, who) {
   if (!question) return json({ error: 'ask me something' }, 400);
   if (question.length > 300) return json({ error: 'keep it under 300 characters' }, 400);
   if (!(await under(env, 'ask:*', LIMITS.askAll))) return json({ error: 'resting', message: "I've answered a lot today and I'm resting. Back tomorrow, or type message <your question> to ask Shamit directly." }, 429);
+  // owner: the x-owner header matches NOTE_KEY (set in the terminal with `owner <key>`) → no per-visitor cap; the global cap still applies
+  if (isOwner(req, env)) {
+    const text = await answer(env, question, Array.isArray(history) ? history : []);
+    return json({ answer: text || "I'm not sure.", left: 999 });
+  }
   if (!(await under(env, `ask:${who}`, LIMITS.ask))) return json({ error: 'limit', message: `That's your ${LIMITS.ask} questions for today. Type message <your question> to ask Shamit directly.` }, 429);
   const used = (await env.DB.prepare('SELECT n FROM usage WHERE day = ?1 AND key = ?2').bind(today(), `ask:${who}`).first())?.n || 0;
   const text = await answer(env, question, Array.isArray(history) ? history : []);
@@ -173,6 +179,59 @@ async function activityData(env, ctx) {
   return { note, music: music?.playing ? { title: music.title, artist: music.artist, url: music.url } : null, push };
 }
 
+// set (text) or clear (null) the hero note, then push the new activity to every open page
+async function setNote(env, ctx, text) {
+  if (text) await env.DB.prepare("INSERT INTO note (id, text, set_at) VALUES (1, ?1, datetime('now')) ON CONFLICT (id) DO UPDATE SET text = ?1, set_at = datetime('now')").bind(text).run();
+  else await env.DB.prepare('DELETE FROM note WHERE id = 1').run();
+  const activity = await activityData(env, ctx);
+  ctx.waitUntil(env.PRESENCE.get(env.PRESENCE.idFromName('site')).fetch('https://do/broadcast', { method: 'POST', body: JSON.stringify({ activity }) }));
+}
+
+// ── owner tools: the terminal's `owner …` commands. Same key as the note page, sent as the x-owner header. ──
+const isOwner = (req, env) => !!env.NOTE_KEY && same(req.headers.get('x-owner') || '', env.NOTE_KEY);
+const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+async function owner(req, env, ctx) {
+  if (!isOwner(req, env)) return json({ error: 'not found' }, 404);   // same answer as an unknown path
+  const b = await body(req), id = Number.isInteger(b.id) ? b.id : 0;
+  switch (b.action) {
+    case 'status': return json({ ok: true });
+    case 'stats': {
+      const days = Math.min(Math.max(+b.days || 1, 1), 30), from = daysAgo(days - 1);
+      const { results: ev } = await env.DB.prepare('SELECT name, SUM(n) AS n FROM events WHERE day >= ?1 GROUP BY name ORDER BY n DESC').bind(from).all();
+      const { results: use } = await env.DB.prepare("SELECT substr(key, 1, instr(key, ':') - 1) AS f, SUM(n) AS n, COUNT(*) AS people FROM usage WHERE day >= ?1 AND key NOT LIKE '%:*' GROUP BY f").bind(from).all();
+      const asksToday = (await env.DB.prepare("SELECT n FROM usage WHERE day = ?1 AND key = 'ask:*'").bind(daysAgo(0)).first())?.n || 0;
+      const pending = (await env.DB.prepare('SELECT COUNT(*) AS n FROM guestbook WHERE approved = 0').first()).n;
+      const { results: top } = await env.DB.prepare("SELECT slug, kind, n FROM counters ORDER BY n DESC LIMIT 8").all();
+      return json({ days, events: ev, usage: use, asksToday, askCap: LIMITS.askAll, pending, counters: top });
+    }
+    case 'pending': {
+      const { results } = await env.DB.prepare('SELECT id, name, text, created_at FROM guestbook WHERE approved = 0 ORDER BY id').all();
+      return json(results);
+    }
+    case 'approve':
+    case 'delete': {
+      if (!id) return json({ error: 'which entry? give its id' }, 400);
+      const r = b.action === 'approve'
+        ? await env.DB.prepare('UPDATE guestbook SET approved = 1 WHERE id = ?1').bind(id).run()
+        : await env.DB.prepare('DELETE FROM guestbook WHERE id = ?1').bind(id).run();
+      if (!r.meta.changes) return json({ error: `no entry #${id}` }, 404);
+      await caches.default.delete(GB_CACHE);
+      return json({ ok: true });
+    }
+    case 'note': {
+      const text = b.text === null ? null : clean(b.text, 60);
+      if (text === '') { const n = await currentNote(env); return json({ note: n }); }   // no text: show the current one
+      await setNote(env, ctx, text);
+      return json({ ok: true, note: await currentNote(env) });
+    }
+    case 'reset': {
+      const r = await env.DB.prepare("DELETE FROM usage WHERE day = ?1 AND key NOT LIKE '%:*' AND (key LIKE 'ask:%' OR key LIKE 'message:%' OR key LIKE 'sign:%')").bind(daysAgo(0)).run();
+      return json({ ok: true, cleared: r.meta.changes });
+    }
+    default: return json({ error: 'unknown action' }, 400);
+  }
+}
+
 // ── /note: your private page for setting the note (bookmark it on your phone). Key = NOTE_KEY secret. ──
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const same = (a, b) => a.length === b.length && [...a].reduce((d, c, i) => d | (c.charCodeAt(0) ^ b.charCodeAt(i)), 0) === 0;
@@ -183,10 +242,8 @@ async function notePage(req, env, ctx, url) {
   if (req.method === 'POST') {
     const form = await req.formData();
     const text = clean(form.get('text'), 60);
-    if (form.get('action') === 'clear') { await env.DB.prepare('DELETE FROM note WHERE id = 1').run(); flash = 'cleared'; }
-    else if (text) { await env.DB.prepare("INSERT INTO note (id, text, set_at) VALUES (1, ?1, datetime('now')) ON CONFLICT (id) DO UPDATE SET text = ?1, set_at = datetime('now')").bind(text).run(); flash = 'live on the site ✦'; }
-    const activity = await activityData(env, ctx);
-    ctx.waitUntil(env.PRESENCE.get(env.PRESENCE.idFromName('site')).fetch('https://do/broadcast', { method: 'POST', body: JSON.stringify({ activity }) }));
+    if (form.get('action') === 'clear') { await setNote(env, ctx, null); flash = 'cleared'; }
+    else if (text) { await setNote(env, ctx, text); flash = 'live on the site ✦'; }
   }
   const note = await currentNote(env);
   const left = note ? Math.max(1, Math.round((NOTE_TTL - (Date.now() - new Date(note.at))) / 3600000)) : 0;
@@ -276,6 +333,7 @@ export default {
       else if (path === '/now-playing' && req.method === 'GET') res = await nowPlaying(env, ctx);
       else if (path === '/activity' && req.method === 'GET') res = json(await activityData(env, ctx));
       else if (path === '/events' && req.method === 'POST') res = await events(req, env, who);
+      else if (path === '/owner' && req.method === 'POST') res = await owner(req, env, ctx);
       else if (m && SLUG.test(m[2])) {
         if (m[1] === 'counts' && req.method === 'GET') res = json(await counts(env, m[2]));
         else if (m[1] === 'views' && req.method === 'POST') res = await bump(env, m[2], 'views');

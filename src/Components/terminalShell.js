@@ -190,6 +190,74 @@ async function neofetch(arg, ctx) {
   return info.map((line, i) => (logo[i - 1] ?? ' '.repeat(W)) + '  ' + line);
 }
 
+// ── owner tools (hidden from help): `owner <key>` unlocks this browser; the rest talk to the Worker's /owner ──
+const OWNER_HELP = [
+  ['owner', 'this list, and whether this browser is unlocked'], ['owner <key>', 'unlock this browser (your note-page key)'], ['owner off', 'lock it again'],
+  ['owner stats [days]', 'visits, scroll depth, commands, clicks (default today, max 30)'], ['owner note [text]', 'show, set or clear the hero note (clear: owner note -)'],
+  ['owner pending', 'guestbook entries waiting for you'], ['owner approve <id>', 'put an entry on the site'], ['owner delete <id>', 'remove an entry'],
+  ['owner reset', "clear today's ask, message and sign limits for everyone"],
+];
+const hasOwnerKey = () => { try { return !!localStorage.getItem('shamit.owner'); } catch { return false; } };
+const ownerApi = (body) => api('/owner', { body });
+async function ownerCmd(arg, ctx) {
+  const [sub = '', ...rest] = (arg || '').trim().split(/\s+/), more = rest.join(' ');
+  const help = () => OWNER_HELP.map(([c, d]) => (ctx.cols < 70 ? `  ${amber(c)}\n    ${dim(d)}` : `  ${amber(pad(c, 22))}${dim(d)}`));
+  if (!API) return [dim('owner tools need the API')];
+  if (sub === 'off') { try { localStorage.removeItem('shamit.owner'); } catch { /* */ } return [dim('locked. owner tools are off on this browser')]; }
+  const known = ['', 'stats', 'note', 'pending', 'approve', 'delete', 'reset'];
+  if (!known.includes(sub)) {   // anything else is a key
+    try { localStorage.setItem('shamit.owner', sub); } catch { return [rust('✕ this browser blocks storage')]; }
+    const stop = ctx.spin('checking the key');
+    const ok = await ownerApi({ action: 'status' }).then(() => true, () => false).finally(stop);
+    if (!ok) { try { localStorage.removeItem('shamit.owner'); } catch { /* */ } return [rust('✕ wrong key')]; }
+    return [`${green('✓')} unlocked. ${dim('unlimited ask on this browser, plus:')}`, ...help().slice(3)];
+  }
+  if (!hasOwnerKey()) return sub ? [dim('locked. unlock first: ') + amber('owner <key>')] : [dim('locked on this browser.'), ...help()];
+  const stop = ctx.spin('asking the worker');
+  try {
+    if (sub === '') { await ownerApi({ action: 'status' }); return [`${green('●')} unlocked on this browser`, ...help()]; }
+    if (sub === 'stats') {
+      const s = await ownerApi({ action: 'stats', days: +more || 1 });
+      const ev = Object.fromEntries(s.events.map((e) => [e.name, e.n]));
+      const sum = (re) => s.events.filter((e) => re.test(e.name)).reduce((t, e) => t + e.n, 0);
+      const top = (re, strip, n = 5) => s.events.filter((e) => re.test(e.name)).slice(0, n).map((e) => `${e.name.replace(strip, '')} ${dim('×' + e.n)}`).join(dim(' · ')) || dim('none');
+      const use = Object.fromEntries(s.usage.map((u) => [u.f, u]));
+      const visits = (ev['visit:desktop'] || 0) + (ev['visit:touch'] || 0);
+      return [
+        `${bold(s.days === 1 ? 'today' : `last ${s.days} days`)}`,
+        `  ${amber(pad('visits', 12))}${white(visits)} ${dim(`(${ev['visit:desktop'] || 0} desktop · ${ev['visit:touch'] || 0} touch)`)}`,
+        `  ${amber(pad('read to', 12))}${[25, 50, 75, 100].map((q) => `${q}% ${white(ev['scroll:' + q] || 0)}`).join(dim(' · '))}`,
+        `  ${amber(pad('terminal', 12))}${white(ev['terminal:open'] || 0)} opens ${dim('·')} ${top(/^term:/, 'term:')}`,
+        `  ${amber(pad('ai', 12))}${white(use.ask?.n || 0)} questions from ${white(use.ask?.people || 0)} ${dim('people · today')} ${white(s.asksToday)}${dim('/' + s.askCap)}`,
+        `  ${amber(pad('clicks out', 12))}${top(/^out:/, 'out:')}`,
+        `  ${amber(pad('contact', 12))}${white(sum(/^contact:/))} ${dim('(copy + mailto)')} ${dim('·')} ${white(use.message?.n || 0)} ${dim('messages')}`,
+        `  ${amber(pad('reading', 12))}${top(/^(article|study):/, /^(article|study):/, 4)}`,
+        `  ${amber(pad('guestbook', 12))}${s.pending ? amber(s.pending + ' waiting') + dim(' · owner pending') : dim('nothing waiting')}`,
+      ];
+    }
+    if (sub === 'note') {
+      const r = await ownerApi({ action: 'note', text: more === '-' ? null : more });
+      if (!more) return [r.note ? `${white(r.note.text)} ${dim('· set ' + ago(r.note.at))}` : dim('no note. set one: ') + amber('owner note <text>')];
+      return [r.note ? `${green('✓')} live: ${white(r.note.text)}` : `${green('✓')} cleared`];
+    }
+    if (sub === 'pending') {
+      const list = await ownerApi({ action: 'pending' });
+      if (!list.length) return [dim('  nothing waiting ✦')];
+      return list.flatMap((g) => [`  ${amber('#' + g.id)} ${green(g.name)} ${dim('· ' + ago(g.created_at.replace(' ', 'T') + 'Z'))}`, ...wrap(g.text, Math.max(20, ctx.cols - 8)).map((l) => '    ' + white(l)), ''])
+        .concat(dim(`  ${amber('owner approve <id>')} or ${amber('owner delete <id>')}`));
+    }
+    if (sub === 'approve' || sub === 'delete') {
+      const id = parseInt(more.replace('#', ''), 10);
+      await ownerApi({ action: sub, id });
+      return [`${green('✓')} #${id} ${sub === 'approve' ? 'is on the site now' : 'deleted'}`];
+    }
+    if (sub === 'reset') { const r = await ownerApi({ action: 'reset' }); return [`${green('✓')} cleared ${r.cleared} limit${r.cleared === 1 ? '' : 's'} for today`]; }
+  } catch (e) {
+    return [e.status === 404 ? rust('✕ the key on this browser is no longer valid. ') + dim('owner off, then owner <key>') : rust('✕ ' + e.message)];
+  } finally { stop(); }
+  return [];
+}
+
 // ── commands ──
 const HELP = [
   ['ask <question>', 'ask anything about me (AI)'], ['whoami', 'who is this'], ['about', 'the longer version'], ['neofetch', 'system info, the fun way'],
@@ -302,6 +370,7 @@ const COMMANDS = {
     document.documentElement.dataset.grad = arg;   // fluid.js + gradient CSS read this live
     return [`palette → ${green(arg)}`];
   },
+  owner: (arg, ctx) => ownerCmd(arg, ctx),
   time: () => { const t = localNow(); return [`${t.time} in India · ${t.status}`]; },
   date: () => [new Date().toString()],
   echo: (arg) => [arg || ''],
@@ -313,7 +382,7 @@ const COMMANDS = {
     return [rust('nice try.')];
   },
 };
-const COMPLETE = { gh: Object.keys(GH), theme: THEMES, open: () => projects().map((p) => slug(p.name)), case: () => PORTFOLIO.featured.filter((p) => p.study).map((p) => slug(p.name)) };
+const COMPLETE = { owner: ['stats', 'note', 'pending', 'approve', 'delete', 'reset', 'off'], gh: Object.keys(GH), theme: THEMES, open: () => projects().map((p) => slug(p.name)), case: () => PORTFOLIO.featured.filter((p) => p.study).map((p) => slug(p.name)) };
 // fish-style ghost: the rest of the newest matching history entry, else of the tab completion
 const suggest = (line, hist) => {
   if (!line) return '';
@@ -389,7 +458,7 @@ export async function createShell(host, { onExit }) {
   const run = async (raw) => {
     const [cmd, ...rest] = raw.trim().split(/\s+/);
     if (!cmd) return;
-    hist.push(raw.trim());
+    if (cmd.toLowerCase() !== 'owner') hist.push(raw.trim());   // never keep the key in history
     localStorage.setItem('shamit.term.hist', JSON.stringify(hist.slice(-100)));
     if (cmd === 'clear') { t.clear(); t.write('\x1b[2K\r'); fresh = true; return; }   // clear() keeps the cursor row, which still says "clear\"
     if (cmd === 'exit') { onExit(); return; }
