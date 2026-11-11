@@ -296,7 +296,7 @@ async function ownerCmd(arg, ctx) {
           if (g) { g.n++; g.who.add(a.who); } else groups.push({ k, q: a.q, n: 1, at: a.at, who: new Set([a.who]) });
         }
         const w = Math.max(20, ctx.cols - 30);
-        return [bold(`${r.asks.length} questions · last ${r.days} days`),
+        return [bold(`${r.asks.length} question${r.asks.length === 1 ? '' : 's'} · last ${r.days} days`),
           ...groups.slice(0, 25).map((g) => `  ${amber(pad(g.n > 1 ? '×' + g.n : '', 4))}${white(g.q.length > w ? g.q.slice(0, w - 1) + '…' : g.q)} ${dim('· ' + sqlAgo(g.at) + ' · ' + [...g.who].slice(0, 2).join(' '))}`),
           '', dim(`  ids are visitors: ${amber('owner block <id>')} silences one · teach the AI: ${amber('owner teach <q> = <a>')}`)];
       }
@@ -308,7 +308,7 @@ async function ownerCmd(arg, ctx) {
         while (!ctx.cancelled && Date.now() < until) {
           const snap = await ownerApi({ action: 'live' });
           const now = new Map();
-          snap.visitors.forEach((v, i) => now.set(`${v.who}#${snap.visitors.slice(0, i).filter((x) => x.who === v.who).length}`, v));
+          snap.visitors.forEach((v, i) => now.set(v.id || `${v.who}#${i}`, v));   // one entry per tab
           if (first) {
             ctx.print(`  ${white(snap.visitors.length)} ${dim(snap.visitors.length === 1 ? 'person here (you, probably)' : 'people here')}`);
             for (const v of now.values()) ctx.print(`  ${amber(v.who)} ${white(v.s)} ${dim(`· ${secs(v.for)} here · on the site ${secs(v.on)}`)}`);
@@ -435,7 +435,8 @@ async function ownerCmd(arg, ctx) {
         if (more === '-') { await set('say', '', { text: '' }); return [ok('cleared')]; }
         const m = more.match(/^(.*?)(?:\s+for\s+(\d+)\s*m?)?$/);
         await set('say', '', { text: m[1], minutes: +m[2] || 10 });
-        return [ok(`showing to everyone here for ${+m[2] || 10} minutes`)];
+        const min = +m[2] || 10;
+        return [ok(`showing to everyone here for ${min} minute${min === 1 ? '' : 's'}`)];
       }
       case 'inbox': {
         const list = await ownerApi({ action: 'inbox', clear: more === 'clear' });
@@ -625,15 +626,33 @@ const COMMANDS = {
     return [rust('nice try.')];
   },
 };
-const COMPLETE = { owner: [...OWNER_SUBS, 'off'], gh: Object.keys(GH), theme: THEMES, open: () => projects().map((p) => slug(p.name)), case: () => PORTFOLIO.featured.filter((p) => p.study).map((p) => slug(p.name)) };
-// fish-style ghost: the rest of the newest matching history entry, else of the tab completion
+const studySlugs = () => PORTFOLIO.featured.filter((p) => p.study).map((p) => slug(p.name));
+// word 2: what each command takes (owner's list only once this browser is unlocked)
+const COMPLETE = { owner: () => (hasOwnerKey() ? [...OWNER_SUBS, 'off'] : []), gh: Object.keys(GH), theme: THEMES, open: () => projects().map((p) => slug(p.name)), case: studySlugs };
+// word 3: values for owner switches
+const OWNER_VALUES = {
+  status: ['open', 'busy', 'hidden'], music: ['on', 'off'], resume: ['on', 'off'], digest: ['on', 'off', 'now'],
+  sphere: [...THEMES, 'calm', 'party', 'off'], spotlight: () => [...PORTFOLIO.featured.map((p) => slug(p.name)), 'off'],
+  banner: ['reset'], inbox: ['clear'],
+};
+const list = (v) => [].concat(typeof v === 'function' ? v() : v || []);
+// candidates for the word being typed: { head (everything before it), word, options }
+function completions(line) {
+  const words = line.split(' '), word = words.pop(), [c, sub] = words;
+  let pool = [];
+  if (words.length === 0) pool = [...Object.keys(COMMANDS), 'clear', 'exit'];
+  else if (words.length === 1) pool = list(COMPLETE[c]);
+  else if (words.length === 2 && c === 'owner' && hasOwnerKey()) pool = list(OWNER_VALUES[sub]);
+  return { head: words.length ? words.join(' ') + ' ' : '', word, options: [...new Set(pool)].filter((x) => x.startsWith(word)).sort() };
+}
+const commonPrefix = (xs) => xs.reduce((a, b) => { let i = 0; while (i < a.length && a[i] === b[i]) i++; return a.slice(0, i); });
+// fish-style ghost: the rest of the newest matching history entry, else of the only (or first) completion
 const suggest = (line, hist) => {
   if (!line) return '';
   for (let i = hist.length - 1; i >= 0; i--) if (hist[i].startsWith(line) && hist[i] !== line) return hist[i].slice(line.length);
-  const [c, arg] = line.split(/ (.*)/);
-  const pool = arg === undefined ? Object.keys(COMMANDS) : [].concat(typeof COMPLETE[c] === 'function' ? COMPLETE[c]() : COMPLETE[c] || []);
-  const m = pool.find((x) => x.startsWith(arg ?? c) && x !== (arg ?? c));
-  return m ? m.slice((arg ?? c).length) : '';
+  const { word, options } = completions(line);
+  const m = word && options.find((x) => x !== word);
+  return m ? m.slice(word.length) : '';
 };
 
 const BOOT = [
@@ -741,11 +760,14 @@ export async function createShell(host, { onExit }) {
     else if (d === '\x7f') { if (line) redraw(line.slice(0, -1)); }
     else if (d === '\x1b[A') { if (h > 0) redraw(hist[--h]); }
     else if (d === '\x1b[B') { if (h < hist.length) { h++; redraw(hist[h] || ''); } }
-    else if (d === '\t') {
-      const [c, arg] = line.split(/ (.*)/);
-      const pool = arg === undefined ? Object.keys(COMMANDS) : [].concat(typeof COMPLETE[c] === 'function' ? COMPLETE[c]() : COMPLETE[c] || []);
-      const m = pool.find((x) => x.startsWith(arg ?? c));
-      if (m) redraw(arg === undefined ? m + ' ' : `${c} ${m}`);
+    else if (d === '\t') {   // zsh-style: one match completes, several extend to what they share, then a second tab lists them
+      const { head, word, options } = completions(line);
+      if (options.length === 1) redraw(head + options[0] + ' ');
+      else if (options.length > 1) {
+        const pre = commonPrefix(options);
+        if (pre.length > word.length) redraw(head + pre);
+        else { t.write('\x1b[K\r\n' + options.map((o) => amber(o)).join('  ')); t.write('\r\n'); redraw(line); }
+      }
     } else if (d === '`' || d === '~') { /* the toggle key, handled by the window */ }
     else if (!d.startsWith('\x1b')) { const s = d.replace(/[\x00-\x1f\x7f]/g, ''); if (s) redraw(line + s); }   // eslint-disable-line no-control-regex -- strip pasted control chars
   });

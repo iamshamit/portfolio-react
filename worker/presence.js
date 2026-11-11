@@ -25,7 +25,7 @@ export class Presence extends DurableObject {
       const now = Date.now();
       const visitors = this.ctx.getWebSockets().filter((w) => w.readyState === 1).map((w) => {
         const a = w.deserializeAttachment() || {};
-        return { who: a.who || '?', s: a.s || 'arriving', for: Math.round((now - (a.at || now)) / 1000), on: Math.round((now - (a.t0 || now)) / 1000) };
+        return { id: a.id || '', who: a.who || '?', s: a.s || 'arriving', for: Math.round((now - (a.at || now)) / 1000), on: Math.round((now - (a.t0 || now)) / 1000) };
       });
       return Response.json({ visitors, feed: this.feed.slice(-30) });
     }
@@ -33,7 +33,7 @@ export class Presence extends DurableObject {
     const [client, server] = Object.values(new WebSocketPair());
     this.ctx.acceptWebSocket(server);
     const now = Date.now();
-    server.serializeAttachment({ who: clip(req.headers.get('x-who'), 8), s: 'arriving', at: now, t0: now });
+    server.serializeAttachment({ id: crypto.randomUUID().slice(0, 8), who: clip(req.headers.get('x-who'), 8), s: 'arriving', at: now, t0: now });   // id: one per tab, so tabs of the same visitor stay apart
     this.broadcast();
     return new Response(null, { status: 101, webSocket: client });
   }
