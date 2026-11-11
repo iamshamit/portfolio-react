@@ -229,7 +229,12 @@ const shareBar = (n, max, w) => amber(bar(n, max, w)) + ' ' + white(n);
 
 async function ownerCmd(arg, ctx) {
   const raw = (arg || '').trim(), [sub = '', ...rest] = raw.split(/\s+/), more = rest.join(' ');
-  const help = () => OWNER_HELP.flatMap(([c, d]) => (!c ? ['', dim('  ' + d)] : ctx.cols < 70 ? [`  ${amber(c)}`, `    ${dim(d)}`] : [`  ${amber(pad(c, 34))}${dim(d)}`]));
+  // two columns when the description fits beside the command (wrapped under itself), else description below
+  const help = () => OWNER_HELP.flatMap(([c, d]) => {
+    if (!c) return ['', dim('  ' + d)];
+    if (ctx.cols < 70) return [`  ${amber(c)}`, ...wrap(d, ctx.cols - 6).map((l) => `    ${dim(l)}`)];
+    return wrap(d, ctx.cols - 38).map((l, i) => `  ${i ? ' '.repeat(34) : amber(pad(c, 34))}${dim(l)}`);
+  });
   if (!API) return [dim('owner tools need the API')];
   if (sub === 'off') { try { localStorage.removeItem('shamit.owner'); } catch { /* */ } return [dim('locked. owner tools are off on this browser')]; }
   if (sub === 'key') return [
@@ -244,7 +249,7 @@ async function ownerCmd(arg, ctx) {
     if (!good) { try { localStorage.removeItem('shamit.owner'); } catch { /* */ } return [rust('✕ wrong key')]; }
     return [ok('unlocked. unlimited ask on this browser, and everything below:'), ...help().slice(5)];
   }
-  if (!hasOwnerKey()) return sub ? [dim('locked. unlock first: ') + amber('owner <key>')] : [dim('locked on this browser.'), ...help()];
+  if (!hasOwnerKey()) return [dim('locked. unlock with ') + amber('owner <key>')];   // the tool list stays private until unlocked
 
   const stop = ctx.spin('asking the worker');
   const set = (k, v, extra = {}) => ownerApi({ action: 'set', k, v, ...extra });
