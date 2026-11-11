@@ -2,6 +2,19 @@
 // or the Worker is down: the site never waits on it.
 export const API = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
 
+// tracked link (?r=<name>, made with `owner link`): kept for this tab, then the param leaves the address bar
+const LINK = (() => {
+  try {
+    const u = new URL(location.href), r = u.searchParams.get('r');
+    if (r && /^[a-z0-9-]{1,20}$/.test(r)) {
+      sessionStorage.setItem('shamit.r', r);
+      u.searchParams.delete('r');
+      history.replaceState(history.state, '', u.pathname + u.search + u.hash);
+    }
+    return sessionStorage.getItem('shamit.r');
+  } catch { return null; }
+})();
+
 export async function api(path, { method = 'GET', body } = {}) {
   if (!API) throw new Error('offline');
   let owner = null;
@@ -20,6 +33,7 @@ const emit = () => subs.forEach((f) => f(here));
 function connect() {
   if (!API || ws) return;
   ws = new WebSocket(API.replace(/^http/, 'ws') + '/presence');
+  ws.onopen = () => { if (lastSection) ws.send(JSON.stringify({ s: lastSection })); };
   ws.onmessage = (e) => {
     let m; try { m = JSON.parse(e.data); } catch { return; }   // "pong"
     if (m.here != null) { here = m.here; tries = 0; emit(); }
@@ -36,6 +50,14 @@ export function onPresence(fn) {
   return () => subs.delete(fn);
 }
 export const presenceCount = () => here;
+// what this page is showing, and terminal commands by name only (never their text): read by `owner live`
+let lastSection = '';
+export function presenceSection(s) {
+  if (s === lastSection) return;
+  lastSection = s;
+  if (ws?.readyState === 1) ws.send(JSON.stringify({ s }));
+}
+export const presenceCommand = (c) => { if (ws?.readyState === 1) ws.send(JSON.stringify({ c })); };
 addEventListener('pagehide', () => ws?.close());
 
 // ── analytics: counts batched in memory, one beacon when the tab is hidden ──
@@ -43,6 +65,8 @@ let batch = {};
 export function track(name) {
   const k = String(name).toLowerCase().replace(/[^a-z0-9:._/-]+/g, '-').slice(0, 60);
   batch[k] = (batch[k] || 0) + 1;
+  // visitors from a tracked link: the events that tell you how it went are counted for that link too
+  if (LINK && /^(visit|scroll|study|article|contact|resume|terminal:open|out)/.test(k)) { const lk = `link:${LINK}:${k}`.slice(0, 60); batch[lk] = (batch[lk] || 0) + 1; }
 }
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'hidden' || !API || !Object.keys(batch).length) return;

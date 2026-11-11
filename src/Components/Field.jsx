@@ -1,7 +1,7 @@
 import React from 'react';
 import gsap from 'gsap';
 import { PORTFOLIO } from '../data/config';
-import { onPresence, track } from '../api';
+import { onPresence, onActivity, track } from '../api';
 
 export function Field() {
   return (
@@ -191,7 +191,9 @@ export function SMMark({ size = 30, className }) {
 export function Nav({ onOpen }) {
   const ref = React.useRef(null);
   const [here, setHere] = React.useState(0);
+  const [status, setStatus] = React.useState('open');   // owner status: open | busy | hidden
   React.useEffect(() => onPresence(setHere), []);
+  React.useEffect(() => onActivity((a) => setStatus(a?.site?.status || 'open')), []);
   React.useEffect(() => {
     let last = window.scrollY;
     const onScroll = () => {
@@ -212,9 +214,8 @@ export function Nav({ onOpen }) {
         <SMMark size={48} className="brand-mark" />
       </a>
       <div className="center">
-        <span className="dot" />
-        Open to work
-        {here > 1 && <span className="here" title="people on the site right now">· {here} here now</span>}
+        {status !== 'hidden' && <><span className={`dot${status === 'busy' ? ' busy' : ''}`} />{status === 'busy' ? 'Heads down' : 'Open to work'}</>}
+        {here > 1 && <span className="here" title="people on the site right now">{status !== 'hidden' && '· '}{here} here now</span>}
       </div>
       <div className="right">
         <a className="lnk" href="#work" data-scroll="work">Work</a>
@@ -226,6 +227,27 @@ export function Nav({ onOpen }) {
         </button>
       </div>
     </nav>
+  );
+}
+
+// a short message from Shamit to everyone on the site right now (`owner say`)
+export function SayToast() {
+  const [say, setSay] = React.useState(null);
+  const [gone, setGone] = React.useState(() => { try { return sessionStorage.getItem('shamit.say') || ''; } catch { return ''; } });
+  React.useEffect(() => onActivity((a) => setSay(a?.site?.say || null)), []);
+  React.useEffect(() => {   // hide when it expires, even with no new push
+    if (!say) return;
+    const t = setTimeout(() => setSay(null), Math.max(0, Date.parse(say.until) - Date.now()));
+    return () => clearTimeout(t);
+  }, [say]);
+  if (!say || gone === say.text + say.until) return null;
+  const close = () => { const k = say.text + say.until; setGone(k); try { sessionStorage.setItem('shamit.say', k); } catch { /* */ } };
+  return (
+    <div className="say" role="status">
+      <span className="say-mark" aria-hidden="true"><SMMark size={22} /></span>
+      <span className="say-text"><b>Shamit</b>{say.text}</span>
+      <button className="say-x" onClick={close} aria-label="Dismiss message">×</button>
+    </div>
   );
 }
 

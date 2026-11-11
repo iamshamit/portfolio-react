@@ -11,8 +11,10 @@
 //   GET|POST /note?k=NOTE_KEY                      → your private page to set the note; pushes it live to every visitor
 //   POST /events  (sendBeacon, one per visit)      → analytics counters
 //   POST /owner                { action, ... }     → owner tools for the terminal (x-owner header = NOTE_KEY)
+//   scheduled (cron, daily)                        → owner digest to Discord while it is switched on
 // Secrets: DISCORD_WEBHOOK, GITHUB_TOKEN, ADMIN_SECRET, NOTE_KEY, [SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REFRESH_TOKEN]
 import { answer } from './ask.js';
+import { PORTFOLIO as P } from '../src/data/config.js';
 export { Presence } from './presence.js';
 
 const LIMITS = { ask: 8, askAll: 300, message: 10, sign: 3, spark: 30, events: 20 };   // per visitor per day; askAll is global
@@ -49,13 +51,30 @@ const where = (req) => `${req.cf?.city || '?'}, ${req.cf?.country || '?'}`;
 async function body(req) { try { return await req.json(); } catch { return {}; } }
 const clean = (s, max) => String(s || '').replace(/[\u0000-\u001f\u007f-\u009f]/g, ' ').trim().slice(0, max);   // eslint-disable-line no-control-regex
 
+// ── live switches (owner tools). Read once per request that needs them; D1 reads are cheap. ──
+const DEFAULTS = { status: 'open', music: 'on', spotlight: '', resume: 'off', sphere: '', mood: '', banner: '', lock: 'off', digest: 'off', say: '' };
+async function settings(env) {
+  const { results } = await env.DB.prepare('SELECT k, v FROM settings').all();
+  return { ...DEFAULTS, ...Object.fromEntries(results.map((r) => [r.k, r.v])) };
+}
+const short = (who) => who.slice(0, 8);   // the visitor id the owner sees and blocks by
+// lock (sitewide) or block (this visitor) for the features strangers can write to
+async function gate(env, who, s) {
+  if (s.lock === 'on') return json({ error: 'locked', message: 'This is switched off for a little while. Email works: ' + P.contact.email }, 503);
+  const b = await env.DB.prepare("SELECT 1 FROM blocks WHERE who = ?1 AND until > datetime('now')").bind(short(who)).first();
+  return b ? json({ error: 'limit', message: "That's enough for today. Email works: " + P.contact.email }, 429) : null;
+}
+
 // ── message ──
 async function message(req, env, who) {
   const { text } = await body(req);
   const t = clean(text, 1001);
   if (!t) return json({ error: 'empty message' }, 400);
   if (t.length > 1000) return json({ error: 'too long (1000 characters max)' }, 400);
+  const shut = await gate(env, who, await settings(env));
+  if (shut) return shut;
   if (!(await under(env, `message:${who}`, LIMITS.message))) return json({ error: `that's ${LIMITS.message} messages today, email works too` }, 429);
+  await env.DB.prepare('INSERT INTO inbox (text, place) VALUES (?1, ?2)').bind(t, where(req)).run();   // readable with `owner inbox`
   const res = await discord(env, { embeds: [{ description: t, color: 0xffac2e, author: { name: 'terminal message' }, footer: { text: `${where(req)} · ${(req.headers.get('user-agent') || '').slice(0, 80)}` }, timestamp: new Date().toISOString() }] });
   return res.ok ? json({ ok: true }) : json({ error: 'discord said no' }, 502);
 }
@@ -66,15 +85,24 @@ async function ask(req, env, who) {
   const question = clean(q, 301);
   if (!question) return json({ error: 'ask me something' }, 400);
   if (question.length > 300) return json({ error: 'keep it under 300 characters' }, 400);
+  const s = await settings(env), owned = isOwner(req, env);
+  if (!owned) { const shut = await gate(env, who, s); if (shut) return shut; }
+  const { results: taught } = await env.DB.prepare('SELECT q, a FROM facts ORDER BY id').all();
+  const opts = { facts: taught, status: s.status };
   if (!(await under(env, 'ask:*', LIMITS.askAll))) return json({ error: 'resting', message: "I've answered a lot today and I'm resting. Back tomorrow, or type message <your question> to ask Shamit directly." }, 429);
   // owner: the x-owner header matches NOTE_KEY (set in the terminal with `owner <key>`) → no per-visitor cap; the global cap still applies
-  if (isOwner(req, env)) {
-    const text = await answer(env, question, Array.isArray(history) ? history : []);
+  if (owned) {
+    const text = await answer(env, question, Array.isArray(history) ? history : [], opts);
     return json({ answer: text || "I'm not sure.", left: 999 });
   }
   if (!(await under(env, `ask:${who}`, LIMITS.ask))) return json({ error: 'limit', message: `That's your ${LIMITS.ask} questions for today. Type message <your question> to ask Shamit directly.` }, 429);
   const used = (await env.DB.prepare('SELECT n FROM usage WHERE day = ?1 AND key = ?2').bind(today(), `ask:${who}`).first())?.n || 0;
-  const text = await answer(env, question, Array.isArray(history) ? history : []);
+  // the question itself, kept 30 days for `owner asks` (the AI's facts tell visitors this)
+  await env.DB.batch([
+    env.DB.prepare('INSERT INTO asks (who, q) VALUES (?1, ?2)').bind(short(who), question),
+    env.DB.prepare("DELETE FROM asks WHERE at < datetime('now', '-30 days')"),
+  ]);
+  const text = await answer(env, question, Array.isArray(history) ? history : [], opts);
   return json({ answer: text || "I'm not sure. Try message <your question> to ask Shamit directly.", left: Math.max(0, LIMITS.ask - used) });
 }
 
@@ -93,6 +121,8 @@ async function guestbookSign(req, env, who) {
   const name = clean(b.name, 40), text = clean(b.text, 281);
   if (!name || !text) return json({ error: 'a name and a message, please' }, 400);
   if (text.length > 280) return json({ error: 'keep it under 280 characters' }, 400);
+  const shut = await gate(env, who, await settings(env));
+  if (shut) return shut;
   if (!(await under(env, `sign:${who}`, LIMITS.sign))) return json({ error: 'you have signed enough for today ✦' }, 429);
   const { id } = await env.DB.prepare('INSERT INTO guestbook (name, text) VALUES (?1, ?2) RETURNING id').bind(name, text).first();
   const base = new URL(req.url).origin;
@@ -152,7 +182,7 @@ async function spotify(env, ctx) {
   ctx.waitUntil(caches.default.put(key, json(out, 200, { 'cache-control': 'max-age=30' })));
   return out;
 }
-const nowPlaying = async (env, ctx) => json(await spotify(env, ctx));
+const nowPlaying = async (env, ctx) => json((await settings(env)).music === 'off' ? { configured: true, playing: false, hidden: true } : await spotify(env, ctx));
 
 // ── live activity for the hero: status note + music + latest push ──
 const NOTE_TTL = 24 * 3600 * 1000;
@@ -175,16 +205,28 @@ async function lastPush(env, ctx) {
   return out;
 }
 async function activityData(env, ctx) {
-  const [note, music, push] = await Promise.all([currentNote(env), spotify(env, ctx).catch(() => null), lastPush(env, ctx).catch(() => null)]);
-  return { note, music: music?.playing ? { title: music.title, artist: music.artist, url: music.url } : null, push };
+  const s = await settings(env);
+  const [note, music, push, eggs] = await Promise.all([
+    currentNote(env), s.music === 'off' ? null : spotify(env, ctx).catch(() => null), lastPush(env, ctx).catch(() => null),
+    env.DB.prepare('SELECT cmd, reply FROM eggs').all().then((r) => r.results),
+  ]);
+  let say = null;
+  try { const v = s.say && JSON.parse(s.say); if (v && Date.parse(v.until) > Date.now()) say = v; } catch { /* old value */ }
+  // only what pages need: lock, digest and the rest stay on the server
+  const site = { status: s.status, spotlight: s.spotlight, resume: s.resume, sphere: s.sphere, mood: s.mood, banner: s.banner, say, eggs: Object.fromEntries(eggs.map((e) => [e.cmd, e.reply])) };
+  return { note, music: music?.playing ? { title: music.title, artist: music.artist, url: music.url } : null, push, site };
+}
+// push fresh activity (note, switches, a `say`) to every open page
+async function pushActivity(env, ctx) {
+  const activity = await activityData(env, ctx);
+  ctx.waitUntil(env.PRESENCE.get(env.PRESENCE.idFromName('site')).fetch('https://do/broadcast', { method: 'POST', body: JSON.stringify({ activity }) }));
 }
 
 // set (text) or clear (null) the hero note, then push the new activity to every open page
 async function setNote(env, ctx, text) {
   if (text) await env.DB.prepare("INSERT INTO note (id, text, set_at) VALUES (1, ?1, datetime('now')) ON CONFLICT (id) DO UPDATE SET text = ?1, set_at = datetime('now')").bind(text).run();
   else await env.DB.prepare('DELETE FROM note WHERE id = 1').run();
-  const activity = await activityData(env, ctx);
-  ctx.waitUntil(env.PRESENCE.get(env.PRESENCE.idFromName('site')).fetch('https://do/broadcast', { method: 'POST', body: JSON.stringify({ activity }) }));
+  await pushActivity(env, ctx);
 }
 
 // ── owner tools: the terminal's `owner …` commands. Same key as the note page, sent as the x-owner header. ──
@@ -227,6 +269,112 @@ async function owner(req, env, ctx) {
     case 'reset': {
       const r = await env.DB.prepare("DELETE FROM usage WHERE day = ?1 AND key NOT LIKE '%:*' AND (key LIKE 'ask:%' OR key LIKE 'message:%' OR key LIKE 'sign:%')").bind(daysAgo(0)).run();
       return json({ ok: true, cleared: r.meta.changes });
+    }
+    case 'set': {   // the live switches
+      const k = String(b.k || ''), raw = b.v == null ? '' : String(b.v);
+      const ok = {
+        status: ['open', 'busy', 'hidden'], music: ['on', 'off'], resume: ['on', 'off'], lock: ['on', 'off'], digest: ['on', 'off'],
+        sphere: ['', 'ocean', 'silk', 'teal', 'aurora', 'ember'], mood: ['', 'calm', 'party'],
+        spotlight: ['', ...P.featured.map((f) => f.name.toLowerCase())],
+      };
+      let v;
+      if (ok[k]) { v = raw.toLowerCase(); if (!ok[k].includes(v)) return json({ error: `${k}: ${ok[k].filter(Boolean).join(' | ')}` }, 400); }
+      else if (k === 'banner') v = clean(raw, 120);
+      else if (k === 'say') {
+        const text = clean(b.text, 120), min = Math.min(Math.max(parseInt(b.minutes, 10) || 10, 1), 120);
+        v = text ? JSON.stringify({ text, until: new Date(Date.now() + min * 60000).toISOString() }) : '';
+      } else return json({ error: 'unknown switch' }, 400);
+      await env.DB.prepare('INSERT INTO settings (k, v) VALUES (?1, ?2) ON CONFLICT (k) DO UPDATE SET v = ?2').bind(k, v).run();
+      await pushActivity(env, ctx);
+      return json({ ok: true, k, v });
+    }
+    case 'settings': return json(await settings(env));
+    case 'asks': {
+      const days = Math.min(Math.max(+b.days || 7, 1), 30);
+      const { results } = await env.DB.prepare(`SELECT who, q, at FROM asks WHERE at >= datetime('now', ?1) ORDER BY id DESC LIMIT 200`).bind(`-${days} days`).all();
+      return json({ days, asks: results });
+    }
+    case 'teach': {
+      const q = clean(b.q, 200), a = clean(b.a, 400);
+      if (q && a) await env.DB.prepare('INSERT INTO facts (q, a) VALUES (?1, ?2)').bind(q, a).run();
+      const { results } = await env.DB.prepare('SELECT id, q, a FROM facts ORDER BY id').all();
+      return json(results);
+    }
+    case 'forget': {
+      const r = await env.DB.prepare('DELETE FROM facts WHERE id = ?1').bind(id).run();
+      return r.meta.changes ? json({ ok: true }) : json({ error: `no fact #${id}` }, 404);
+    }
+    case 'egg': {
+      const cmd = String(b.cmd || '').toLowerCase();
+      if (cmd) {
+        if (!/^[a-z0-9-]{1,20}$/.test(cmd)) return json({ error: 'egg names: a-z, 0-9 and -, up to 20' }, 400);
+        const reply = clean(b.reply, 300);
+        if (reply) await env.DB.prepare('INSERT INTO eggs (cmd, reply) VALUES (?1, ?2) ON CONFLICT (cmd) DO UPDATE SET reply = ?2').bind(cmd, reply).run();
+        else await env.DB.prepare('DELETE FROM eggs WHERE cmd = ?1').bind(cmd).run();
+        await pushActivity(env, ctx);
+      }
+      const { results } = await env.DB.prepare('SELECT cmd, reply FROM eggs ORDER BY cmd').all();
+      return json(results);
+    }
+    case 'inbox': {
+      if (b.clear) await env.DB.prepare('DELETE FROM inbox').run();
+      const { results } = await env.DB.prepare('SELECT id, text, place, at FROM inbox ORDER BY id DESC LIMIT 20').all();
+      return json(results);
+    }
+    case 'block': {
+      const w = String(b.who || '').toLowerCase();
+      if (w) {
+        if (!/^[0-9a-f]{8}$/.test(w)) return json({ error: 'visitor ids are 8 characters, as shown in owner asks / owner live' }, 400);
+        if (b.off) await env.DB.prepare('DELETE FROM blocks WHERE who = ?1').bind(w).run();
+        else await env.DB.prepare("INSERT INTO blocks (who, until) VALUES (?1, datetime('now', '+1 day')) ON CONFLICT (who) DO UPDATE SET until = datetime('now', '+1 day')").bind(w).run();
+      }
+      const { results } = await env.DB.prepare("SELECT who, until FROM blocks WHERE until > datetime('now') ORDER BY until").all();
+      return json(results);
+    }
+    case 'link': {
+      const name = String(b.name || '').toLowerCase();
+      if (name) {
+        if (!/^[a-z0-9-]{1,20}$/.test(name)) return json({ error: 'link names: a-z, 0-9 and -, up to 20' }, 400);
+        await env.DB.prepare('INSERT OR IGNORE INTO links (name) VALUES (?1)').bind(name).run();
+      }
+      const { results: names } = await env.DB.prepare('SELECT name, created_at FROM links ORDER BY created_at DESC').all();
+      const { results: ev } = await env.DB.prepare("SELECT name, SUM(n) AS n, MAX(day) AS last FROM events WHERE name LIKE 'link:%' GROUP BY name").all();
+      return json({ links: names, events: ev });
+    }
+    case 'sparks': {
+      const { results: totals } = await env.DB.prepare('SELECT slug, kind, n FROM counters').all();
+      const { results: week } = await env.DB.prepare("SELECT name, SUM(CASE WHEN day >= ?1 THEN n ELSE 0 END) AS now, SUM(CASE WHEN day < ?1 THEN n ELSE 0 END) AS before FROM events WHERE day >= ?2 AND (name LIKE 'article:%' OR name LIKE 'study:%') GROUP BY name").bind(daysAgo(6), daysAgo(13)).all();
+      return json({ totals, week });
+    }
+    case 'ideas': {   // journal ideas from what people asked
+      const { results } = await env.DB.prepare("SELECT DISTINCT q FROM asks WHERE at >= datetime('now', '-30 days') ORDER BY id DESC LIMIT 80").all();
+      if (results.length < 3) return json({ ideas: [], note: 'not enough questions yet (need a few days of asks)' });
+      const covered = [...P.journal.map((j) => j.title), ...P.featured.filter((f) => f.study).map((f) => f.name + ' case study')].join('; ');
+      const out = await env.AI.run('@cf/meta/llama-3.1-8b-instruct-fp8-fast', { max_tokens: 300, temperature: 0.4, messages: [
+        { role: 'system', content: 'You help a software engineer plan blog posts. Reply with exactly 5 lines, each a short post title, then " — " and why, in under 20 words. No numbering, no markdown.' },
+        { role: 'user', content: `Already written: ${covered}\n\nQuestions visitors asked about him:\n${results.map((r) => '- ' + r.q).join('\n')}\n\nSuggest 5 posts that would answer what visitors want to know and are not already written.` },
+      ] });
+      return json({ ideas: String(out.response || '').split('\n').map((l) => l.replace(/^[\s\-*\d.]+/, '').trim()).filter(Boolean).slice(0, 5) });
+    }
+    case 'live': {
+      const r = await env.PRESENCE.get(env.PRESENCE.idFromName('site')).fetch('https://do/snapshot', { method: 'POST' });
+      return json(await r.json());
+    }
+    case 'health': {
+      const s = await settings(env);
+      const asksToday = (await env.DB.prepare("SELECT n FROM usage WHERE day = ?1 AND key = 'ask:*'").bind(today()).first())?.n || 0;
+      const writes = (await env.DB.prepare('SELECT (SELECT COALESCE(SUM(n), 0) FROM usage WHERE day = ?1) + (SELECT COUNT(*) FROM events WHERE day = ?1) AS n').bind(today()).first()).n;
+      const gh = await fetch('https://api.github.com/rate_limit', { headers: { authorization: `Bearer ${env.GITHUB_TOKEN}`, 'user-agent': 'portfolio-worker' } })
+        .then((r) => (r.ok ? r.json() : null)).then((j) => j && { left: j.rate.remaining, limit: j.rate.limit }).catch(() => null);
+      return json({
+        asksToday, askCap: LIMITS.askAll, neurons: asksToday * 30, neuronCap: 10000, writesApprox: writes,
+        github: gh, spotify: !!env.SPOTIFY_REFRESH_TOKEN, discord: !!env.DISCORD_WEBHOOK,
+        settings: s,
+      });
+    }
+    case 'digest': {   // send one now (to check it)
+      const ok = await sendDigest(env, today());
+      return ok ? json({ ok: true }) : json({ error: 'discord said no' }, 502);
     }
     default: return json({ error: 'unknown action' }, 400);
   }
@@ -320,7 +468,10 @@ export default {
     const who = await visitor(req);
     if (env.BURST && !(await env.BURST.limit({ key: who })).success) return json({ error: 'slow down' }, 429, cors);
 
-    if (path === '/presence' && req.headers.get('upgrade') === 'websocket') return env.PRESENCE.get(env.PRESENCE.idFromName('site')).fetch(req);
+    if (path === '/presence' && req.headers.get('upgrade') === 'websocket') {
+      const fwd = new Request(req); fwd.headers.set('x-who', short(who));   // set by the Worker only; the DO never trusts a client value
+      return env.PRESENCE.get(env.PRESENCE.idFromName('site')).fetch(fwd);
+    }
 
     let res;
     try {
@@ -348,4 +499,30 @@ export default {
     for (const [k, v] of Object.entries(cors)) out.headers.set(k, v);
     return out;
   },
+  // daily at 09:00 IST: yesterday's summary, only while `owner digest on`
+  async scheduled(event, env, ctx) {
+    if ((await settings(env)).digest === 'on') ctx.waitUntil(sendDigest(env, daysAgo(1)));
+  },
 };
+
+// ── owner digest: one Discord embed with a day's numbers ──
+async function sendDigest(env, day) {
+  const { results: ev } = await env.DB.prepare('SELECT name, n FROM events WHERE day = ?1 ORDER BY n DESC').bind(day).all();
+  const n = (name) => ev.find((e) => e.name === name)?.n || 0;
+  const top = (prefix, k = 3) => ev.filter((e) => e.name.startsWith(prefix)).slice(0, k).map((e) => `${e.name.slice(prefix.length)} ×${e.n}`).join(', ') || '—';
+  const asks = (await env.DB.prepare("SELECT COUNT(*) AS n FROM asks WHERE date(at) = ?1").bind(day).first()).n;
+  const inbox = (await env.DB.prepare("SELECT COUNT(*) AS n FROM inbox WHERE date(at) = ?1").bind(day).first()).n;
+  const pending = (await env.DB.prepare('SELECT COUNT(*) AS n FROM guestbook WHERE approved = 0').first()).n;
+  const r = await discord(env, { embeds: [{
+    title: `iamshamit.com · ${day}`, color: 0x49c5b6,
+    description: [
+      `**${n('visit:desktop') + n('visit:touch')}** visits (${n('visit:desktop')} desktop · ${n('visit:touch')} touch) · **${n('scroll:100')}** read to the end`,
+      `from: ${top('src:')}`,
+      `read: ${top('study:')} ${top('article:') === '—' ? '' : '· ' + top('article:')}`,
+      `terminal: **${n('terminal:open')}** opens · AI: **${asks}** questions · messages: **${inbox}**`,
+      `tracked links: ${ev.filter((e) => /^link:[^:]+:visit/.test(e.name)).map((e) => e.name.split(':')[1] + ' ×' + e.n).join(', ') || '—'}`,
+      pending ? `guestbook: **${pending}** waiting (owner pending)` : '',
+    ].filter(Boolean).join('\n'),
+  }] });
+  return r.ok;
+}

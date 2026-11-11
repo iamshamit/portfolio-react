@@ -5,7 +5,7 @@ import { SMMark } from './Field';
 import { BlockRenderer, Toc, TocMobile } from './JournalBlocks';
 import { Link } from 'react-router-dom';
 import LocalTime from './LocalTime';
-import { API, api, track } from '../api';
+import { API, api, track, onActivity } from '../api';
 import { useActivity, LiveStatus } from './Hero';
 
 export function Skills() {
@@ -151,6 +151,8 @@ export function GitHub() {
 
 export function Contact() {
   const email = PORTFOLIO.contact.email;
+  const [resume, setResume] = React.useState(false);   // `owner resume on|off`
+  React.useEffect(() => onActivity((a) => setResume(a?.site?.resume === 'on')), []);
   const [copied, setCopied] = React.useState(false);
   const timer = React.useRef();
   const openMail = () => { window.location.href = `mailto:${email}`; };
@@ -214,6 +216,7 @@ export function Contact() {
               {s.label} <span>↗</span>
             </a>
           ))}
+          {resume && <a href="/resume.pdf" download="Shamit-Mishra-Resume.pdf" onClick={() => track('resume:download')}>Résumé <span>↓</span></a>}
         </div>
       </div>
     </section>

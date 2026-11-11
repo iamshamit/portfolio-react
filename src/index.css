@@ -748,3 +748,18 @@ html::-webkit-scrollbar{display:none}
 @media(pointer:fine){ .sbar,.sbar i{cursor:none} }   /* the custom cursor ring already marks the pointer */
 @media(pointer:coarse){ .sbar{pointer-events:none;width:6px} .sbar i{width:3px;right:1px} }
 html.intro .sbar,html.menu-open .sbar{visibility:hidden}
+
+/* owner status: busy turns the badge amber */
+.nav .center .dot.busy{background:#ffac2e;box-shadow:0 0 8px #ffac2e}
+/* owner say: a note from Shamit to everyone on the site */
+.say{position:fixed;left:24px;bottom:24px;z-index:96;display:flex;align-items:center;gap:12px;max-width:min(420px,calc(100vw - 48px));padding:12px 12px 12px 14px;
+  border-radius:16px;background:rgba(14,12,9,.78);backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3);border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 18px 50px rgba(0,0,0,.45);animation:say-in .7s var(--ease)}
+.say-mark{flex:none;color:#fff;display:flex}
+.say-text{font-size:14px;line-height:1.4;color:#fff;overflow-wrap:anywhere}
+.say-text b{display:block;font-weight:500;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#ffac2e;margin-bottom:2px}
+.say-x{flex:none;align-self:flex-start;font-size:18px;line-height:1;color:rgba(255,255,255,.5);padding:2px 6px}
+.say-x:hover{color:#fff}
+@keyframes say-in{from{opacity:0;transform:translateY(14px)}}
+@media(prefers-reduced-motion:reduce){ .say{animation:none} }
+@media(max-width:560px){ .say{left:12px;right:12px;bottom:12px;max-width:none} }

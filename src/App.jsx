@@ -7,14 +7,14 @@ import { useNavigate, useLocation, Routes, Route } from 'react-router-dom';
 import './App.css';
 import './index.css';
 import { PORTFOLIO } from './data/config';
-import { Cursor, HeroBackdrop, Nav, Overlay, SMMark, ScrollBar } from './Components/Field';
+import { Cursor, HeroBackdrop, Nav, Overlay, SMMark, ScrollBar, SayToast } from './Components/Field';
 import { Hero, Marquee, About } from './Components/Hero';
 import { Featured, Gallery } from './Components/Work';
 import { Skills, Timeline, GitHub, Journal, Article, Contact, Footer, NotFound } from './Components/Sections';
 import Terminal from './Components/Terminal';
 import JournalPage from './Components/JournalPage';
 import { initFx } from './fx';
-import { track } from './api';
+import { track, presenceSection, onActivity } from './api';
 
 function slugify(text) {
   return String(text).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -98,6 +98,24 @@ export default function App() {
     };
     addEventListener('scroll', onDepth, { passive: true });
     track('visit' + (matchMedia('(pointer:coarse)').matches ? ':touch' : ':desktop'));
+    // where the visit came from (host only), for `owner sources`
+    let src = 'direct';
+    try { const h = document.referrer && new URL(document.referrer).host.replace(/^www\./, ''); if (h && h !== location.host.replace(/^www\./, '')) src = h; } catch { /* bad referrer */ }
+    track('src:' + src);
+
+    // which section is in the middle of the screen, for `owner live` (an open article or case study wins)
+    const secIO = new IntersectionObserver((es) => {
+      es.forEach((e) => { if (e.isIntersecting) { window.__section = e.target.dataset.screenLabel; if (!window.__reading) presenceSection(window.__section); } });
+    }, { rootMargin: '-45% 0px -45% 0px' });
+    document.querySelectorAll('[data-screen-label]').forEach((el) => secIO.observe(el));
+
+    // owner switches: sphere colour (unless this visitor picked a theme in the terminal) and mood (sphere speed)
+    const offSite = onActivity((a) => {
+      const s = a?.site || {};
+      let picked = false; try { picked = !!sessionStorage.getItem('shamit.theme'); } catch { /* */ }
+      if (!picked) { if (s.sphere) document.documentElement.dataset.grad = s.sphere; else delete document.documentElement.dataset.grad; }   // no switch: the default look
+      window.__sphereSpeed = { calm: 0.45, party: 2.6 }[s.mood] || 1;
+    });
 
     // Away from the tab: the title calls you back and the favicon turns into the sphere
     const icon = document.querySelector('link[rel="icon"]'), iconHref = icon && icon.getAttribute('href');
@@ -161,6 +179,7 @@ export default function App() {
     document.querySelectorAll('.reveal,[data-stagger]').forEach((el) => io.observe(el));
 
     if (reduce) return () => {
+      secIO.disconnect(); offSite();
       document.removeEventListener('click', onOut);
       removeEventListener('scroll', onDepth);
       document.removeEventListener('visibilitychange', onVis);
@@ -299,6 +318,7 @@ export default function App() {
     setTimeout(() => { ScrollTrigger.refresh(); if (lenis) lenis.resize(); }, 1500);
 
     return () => {
+      secIO.disconnect(); offSite();
       document.removeEventListener('click', onOut);
       removeEventListener('scroll', onDepth);
       document.removeEventListener('visibilitychange', onVis);
@@ -321,6 +341,9 @@ export default function App() {
   const studyPost = (p) => ({ title: p.name, excerpt: p.study.excerpt, tag: 'Case study', date: p.year, read: p.study.read, body: p.study.body, study: true });
   const isHome = location.pathname === '/' || study >= 0 || (!!blogSlug && PORTFOLIO.journal.some((p) => slugify(p.title) === decodeURIComponent(blogSlug)));
   const hero = PORTFOLIO.hero;
+  // an open article or case study is what this visitor is reading (owner live)
+  const reading = study >= 0 ? `case study: ${studies[study].name}` : article != null ? `article: ${PORTFOLIO.journal[article].title}` : '';
+  React.useEffect(() => { window.__reading = reading; presenceSection(reading || window.__section || 'Hero'); }, [reading]);
 
   return (
     <>
@@ -334,6 +357,7 @@ export default function App() {
       {isHome && <Nav onOpen={() => setMenu(true)} />}
       {isHome && <Overlay open={menu} onClose={() => setMenu(false)} />}
       <Terminal />
+      <SayToast />
 
       <Routes>
         <Route path="/journal" element={

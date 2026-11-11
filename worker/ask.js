@@ -25,7 +25,7 @@ const FACTS = [
   `Contact: ${P.contact.email}. ${P.contact.socials.map((s) => `${s.label}: ${s.href}`).join(', ')}. Visitors can also type "message <text>" in this terminal to reach him directly.`,
 ].join('\n\n');
 
-const SYSTEM = `You are the assistant inside the terminal on ${P.fullName}'s portfolio website. Visitors ask you about ${P.name}.
+const SYSTEM_HEAD = `You are the assistant inside the terminal on ${P.fullName}'s portfolio website. Visitors ask you about ${P.name}.
 Rules:
 - Answer ONLY from the FACTS below. Never invent employers, dates, numbers, clients, users, awards or skills. Never say a project has users, traction or wins unless the FACTS say so for that exact project. If the facts don't cover it, say you don't know and suggest typing "message <your question>" to ask ${P.name} directly.
 - Talk about ${P.name} in the third person, warmly and plainly. Keep answers under 80 words. Plain text only: no markdown, no lists with asterisks, no emoji.
@@ -35,6 +35,14 @@ Rules:
 
 FACTS:
 ${FACTS}`;
+// taught facts (owner teach) and the live hiring status are added per request, so they change without a deploy
+const STATUS_FACT = {
+  open: `Availability: ${P.name} is open to new roles. ${P.ai?.lookingFor || ''}`,
+  busy: `Availability: ${P.name} is not looking for a new role right now, but is happy to talk. Do not say he is looking for work.`,
+  hidden: `Availability: do not discuss whether ${P.name} is looking for work. Point people to his email instead.`,
+};
+const systemFor = ({ facts = [], status = 'open' } = {}) => SYSTEM_HEAD + '\n\n' + (STATUS_FACT[status] || STATUS_FACT.open)
+  + (facts.length ? `\n\nAdded by ${P.name} (newest knowledge, trust these over anything above):\n${facts.map((f) => `- ${f.q}: ${f.a}`).join('\n')}` : '');
 
 const REFUSAL = `I only answer questions about ${P.name} and his work. Try asking about his projects, skills or experience, or type message <text> to reach him.`;
 // worked examples: small models follow a shown refusal far better than a written rule
@@ -50,16 +58,20 @@ const EXAMPLES = [
 const OFF_TOPIC = /```|^\s*(def|function|class|import|#include|public static)\b|<\/?[a-z][^>]*>/im;
 
 // the questions that matter most get a fixed, always-right answer (and cost no neurons)
+const CONTACT = `Email ${P.contact.email}, find him on ${P.contact.socials.map((s) => s.label).join(' and ')}, or type message <your note> here and it goes straight to him.`;
+const HIRE = {
+  open: `Yes. ${P.name} is looking for ${P.ai?.lookingFor ? P.ai.lookingFor.charAt(0).toLowerCase() + P.ai.lookingFor.slice(1) : 'software and web development roles.'} Email ${P.contact.email}, or type message <your note> right here and it reaches him directly.`,
+  busy: `${P.name} isn't looking for a new role right now, but he's always happy to talk. Email ${P.contact.email}, or type message <your note> here.`,
+  hidden: CONTACT,
+};
 const CANNED = [
-  [/\b(hire|hiring|recruit|available|availability|open to (work|roles?)|freelance|contract|job|role for|work with (him|shamit))\b/i,
-    `Yes. ${P.name} is looking for ${P.ai?.lookingFor ? P.ai.lookingFor.charAt(0).toLowerCase() + P.ai.lookingFor.slice(1) : 'software and web development roles.'} Email ${P.contact.email}, or type message <your note> right here and it reaches him directly.`],
-  [/\b(contact|reach|email|get in touch|talk to)\b/i,
-    `Email ${P.contact.email}, find him on ${P.contact.socials.map((s) => s.label).join(' and ')}, or type message <your note> here and it goes straight to him.`],
+  [/\b(hire|hiring|recruit|available|availability|open to (work|roles?)|freelance|contract|job|role for|work with (him|shamit))\b/i, (s) => HIRE[s] || HIRE.open],
+  [/\b(contact|reach|email|get in touch|talk to)\b/i, () => CONTACT],
 ];
 
-export async function answer(env, question, history) {
-  for (const [re, reply] of CANNED) if (re.test(question)) return reply;
-  const messages = [{ role: 'system', content: SYSTEM }, ...EXAMPLES];
+export async function answer(env, question, history, opts = {}) {
+  for (const [re, reply] of CANNED) if (re.test(question)) return reply(opts.status);
+  const messages = [{ role: 'system', content: systemFor(opts) }, ...EXAMPLES];
   for (const h of history.slice(-4)) {   // short memory for follow-ups; the client sends at most the last exchanges
     if ((h.role === 'user' || h.role === 'assistant') && typeof h.content === 'string') messages.push({ role: h.role, content: h.content.slice(0, 600) });
   }

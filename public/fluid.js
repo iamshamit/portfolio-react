@@ -229,6 +229,7 @@
     const lin = (a,b,x)=>Math.max(0, Math.min(1, (x-a)/(b-a)));
     const smooth = (a,b,x)=>{ const t = lin(a,b,x); return t*t*(3-2*t); };
     let raf, running = true;
+    let clock = 0, lastNow = performance.now(), speed = 1;   // owner mood: window.__sphereSpeed eases in, time never jumps
     // live palette: eases toward the chapter's preset (fx.js sets window.__pal from the docked anchor's data-pal)
     const cols = (PRESETS[document.documentElement.dataset.grad] || PRESETS.ocean).map((c) => c.slice());
     // read once: getComputedStyle every frame forces a style recalc mid-scroll (nothing changes --motion at runtime)
@@ -240,7 +241,10 @@
       mx += (tx - mx) * 0.05; my += (ty - my) * 0.05;
       const tgt = PRESETS[window.__pal] || PRESETS[document.documentElement.dataset.grad] || PRESETS.ocean;
       for(let i=0;i<3;i++) for(let j=0;j<3;j++) cols[i][j] += (tgt[i][j] - cols[i][j]) * 0.035;
-      const time = reduce ? 12.0 : (performance.now() - start) / 1000 * motion;
+      const tNow = performance.now();
+      speed += ((window.__sphereSpeed || 1) - speed) * 0.02;
+      clock += Math.min(tNow - lastNow, 100) / 1000 * motion * speed; lastNow = tNow;
+      const time = reduce ? 12.0 : clock;
       const sc = reduce ? 0 : (window.__heroScroll || 0);   // 0..1 hero scroll progress
 
       // ---- ambient sphere life (slow sine drift + breathing scale) ----

@@ -27,6 +27,11 @@ tag = "v1"
 new_sqlite_classes = ["Presence"]
 
 # per-visitor burst guard, checked before any real work (per Cloudflare location)
+# daily owner digest to Discord at 09:00 IST (only sent while `owner digest on`)
+[triggers]
+crons = ["30 3 * * *"]
+
+
 [[ratelimits]]
 name = "BURST"
 namespace_id = "1001"

@@ -1,5 +1,7 @@
 import React from 'react';
 import { PORTFOLIO } from '../data/config';
+import { onActivity } from '../api';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import {
   AvniPage, NexaraPage, PortfolioPage, RahiPage,
   SpendWisePage, PastaPage, FmhyPage,
@@ -82,7 +84,7 @@ function Mock({ p }) {
 
 function Feat({ p, i, onStudy }) {
   return (
-    <article className="feat" data-screen-label={`Project ${p.num}`}>
+    <article className="feat" data-screen-label={p.name}>
       <a className="feat-vis" data-cursor="view" data-parallax="" data-orb="56" data-orb-x={i % 2 ? 1.08 : -0.08} data-orb-y="-0.08" data-pal={p.gradient} href={p.url} target="_blank" rel="noreferrer" style={{ display:'block', textDecoration:'none' }}>
         {!FEATURED_UI[p.name] && <div className="g" style={{ background: GRAD[p.gradient] }} />}
         <Mock p={p} />
@@ -109,6 +111,11 @@ function Feat({ p, i, onStudy }) {
 }
 
 export function Featured({ onStudy }) {
+  // `owner spotlight <project>` moves that project to the front, live
+  const [lead, setLead] = React.useState('');
+  React.useEffect(() => onActivity((a) => setLead(a?.site?.spotlight || '')), []);
+  const list = lead ? [...PORTFOLIO.featured].sort((a, b) => (b.name.toLowerCase() === lead) - (a.name.toLowerCase() === lead)) : PORTFOLIO.featured;
+  React.useEffect(() => { requestAnimationFrame(() => ScrollTrigger.refresh()); }, [lead]);   // scroll effects re-measure after the reorder
   return (
     <section className="featured" id="work">
       <div className="well" style={{ paddingTop: '150px' }}>
@@ -118,7 +125,7 @@ export function Featured({ onStudy }) {
           <div className="note">{PORTFOLIO.featured.length} featured · {new Date().getFullYear()}</div>
         </div>
       </div>
-      {PORTFOLIO.featured.map((p, i) => <Feat key={p.num} p={p} i={i} onStudy={onStudy} />)}
+      {list.map((p, i) => <Feat key={p.num} p={p} i={i} onStudy={onStudy} />)}
     </section>
   );
 }

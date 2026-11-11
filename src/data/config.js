@@ -232,7 +232,7 @@ export const PORTFOLIO = {
       "Sections, top to bottom: hero, about, selected work (Avni, Nexara, Rahi, each with a case study), more projects, toolkit, experience and education, open source (GitHub), journal, contact.",
       "Case studies open at iamshamit.com/work/avni, /work/nexara and /work/rahi, or with the terminal command case <project>.",
       "The terminal opens with the ` or ~ key, or the Ask me link in the top bar. Commands: ask (or any question ending in ?), whoami, about, neofetch, ls, case <project>, open <project>, skills, gh (repos, langs, activity), message <text> (goes straight to Shamit), sign and guestbook, who, np (now playing), contact, socials, theme <name> (ocean, silk, teal, aurora, ember), time, clear, exit. Tab completes, and grey suggestions appear as you type.",
-      "Privacy: visitors' IP addresses are hashed, never stored raw, and analytics are only simple counters.",
+      "Privacy: visitors' IP addresses are hashed, never stored raw, and analytics are only simple counters. Questions asked to this assistant are kept for 30 days so Shamit can see what people want to know.",
       "Small touches: the tab title says come back when you switch away, the footer name letters move away from your cursor, and sudo hire shamit in the terminal drafts an email to him.",
     ],
     learning: "Going deeper into Go and edge/serverless backends (Cloudflare Workers, Hono), and building LLM features into real products, such as this very assistant on his portfolio.",
